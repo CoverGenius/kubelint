@@ -1,4 +1,4 @@
-package main
+package kubelint
 
 import (
 	bytesPkg "bytes"
@@ -16,26 +16,31 @@ import (
 /**
 *	Given a list of filenames to read from, produce
 *	YamlDerivedResources
+*	and report if the call to ReadFile(filepath) for a certain passed filepath failed
 **/
-func Read(filepaths ...string) ([]*YamlDerivedResource, error) {
+func Read(filepaths ...string) ([]*YamlDerivedResource, []error) {
+	var errors []error
 	var resources []*YamlDerivedResource
 	for _, filepath := range filepaths {
 		content, err := ioutil.ReadFile(filepath)
 		if err != nil {
-			return nil, err
+			errors = append(errors, err)
+			continue
 		}
-		resources = append(resources, ReadBytes(content, filepath)...)
+		r, errs := ReadBytes(content, filepath)
+		resources = append(resources, r...)
+		errors = append(errors, errs...)
 	}
-	return resources, nil
+	return resources, errors
 }
 
-func ReadFile(file *os.File) ([]*YamlDerivedResource, error) {
+func ReadFile(file *os.File) ([]*YamlDerivedResource, []error) {
 	content, err := ioutil.ReadAll(file)
 	if err != nil {
-		return nil, err
+		return nil, []error{err}
 	}
-	resources := ReadBytes(content, file.Name())
-	return resources, nil
+	resources, errors := ReadBytes(content, file.Name())
+	return resources, errors
 }
 
 /**
@@ -44,7 +49,8 @@ func ReadFile(file *os.File) ([]*YamlDerivedResource, error) {
 * It will silently fail if something doesn't conform to the Resource struct requirements (meta.Type and metav1.Object conformance)
 * I may have to change this in the future.
 **/
-func ReadBytes(bytes []byte, filepath string) []*YamlDerivedResource {
+func ReadBytes(bytes []byte, filepath string) ([]*YamlDerivedResource, []error) {
+	var errors []error
 	var resources []*YamlDerivedResource
 	newline := detectLineBreak(bytes)
 	segments := bytesPkg.Split(bytes, []byte(fmt.Sprintf("%s---%s", newline, newline)))
@@ -53,23 +59,23 @@ func ReadBytes(bytes []byte, filepath string) []*YamlDerivedResource {
 	// 1. Iterate over each byte representation of an object
 	for _, marshalledResource := range segments {
 		if len(strings.Trim(string(marshalledResource), newline)) == 0 {
-			continue
+			errors = append(errors, fmt.Errorf("Empty YAML document found in %s", filepath))
 		}
 		// 2. Decode the object into its corresponding k8s type (eg *appsv1.Deployment)
 		concrete, _, err := scheme.Codecs.UniversalDeserializer().Decode(marshalledResource, nil, nil)
 		if err != nil {
-			// possibly should log something here
+			errors = append(errors, fmt.Errorf("UniversalDeserializer.Decode: %s, maybe the YAML document in %s can't conform to the runtime.Object interface", err, filepath))
 			continue
 		}
 		// 3. Try to get the object to conform to these easy-to-use interfaces
-		typeInfo, ok := concrete.(meta.Type)
-		if !ok {
-			// possibly should log something here
+		typeInfo, err := meta.TypeAccessor(concrete)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("Kubernetes object in %s does not conform to the meta.Type interface, so it cannot be interpreted by this tool", filepath))
 			continue
 		}
 		object, ok := concrete.(metav1.Object)
 		if !ok {
-			// possibly should log something here
+			errors = append(errors, fmt.Errorf("Kubernetes object in %s does not conform to the metav1.Object interface, so it cannot be interpreted by this tool", filepath))
 			continue
 		}
 		resources = append(resources, &YamlDerivedResource{
@@ -82,7 +88,7 @@ func ReadBytes(bytes []byte, filepath string) []*YamlDerivedResource {
 		})
 		currentObjNum++
 	}
-	return resources
+	return resources, errors
 }
 
 // copied from https://github.com/instrumenta/kubeval/blob/9c9c0a5b3cc619dbd94129af77c8512bfd0f1763/kubeval/utils.go#L24

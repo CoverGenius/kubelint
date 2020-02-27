@@ -1,7 +1,8 @@
-package main
+package kubelint
 
 import (
-	log "github.com/sirupsen/logrus"
+	"fmt"
+
 	meta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -20,22 +21,33 @@ type Resource struct {
 }
 
 /**
+*	ConvertToResource attempts to convert any object into a kubernetes Resource.
+*	For this to work, the object needs to conform to the v1.Object interface.
+*	If it doesn't, and error will be returned.
+**/
+func ConvertToResource(thing interface{}) (*Resource, error) {
+	object, ok := thing.(metav1.Object)
+	if !ok {
+		return nil, fmt.Errorf("Thing could not be converted to a metav1.Object")
+	}
+	typed, err := meta.TypeAccessor(thing)
+	if err != nil {
+		return nil, err
+	}
+	return &Resource{
+		TypeInfo: typed,
+		Object:   object,
+	}, nil
+}
+
+/**
 *	This is really just a resource,
 *	but with some contextual information,
 *	so we can have more informative logs.
 **/
 type YamlDerivedResource struct {
-	Resource
+	Resource Resource // the underlying resource
 
 	Filepath   string // the filepath where this resource was found
 	LineNumber int    // the line number on which this resource is defined
-}
-
-/**
-*	Struct to carry all information necessary for the logger.
-**/
-type Result struct {
-	Resource *YamlDerivedResource // the resource on which the rule was performed to get this result
-	Message  string               // the complaining message (eg "no securityContextKey present")
-	Level    log.Level            // the level of trouble this result causes
 }
