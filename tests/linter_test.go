@@ -13,8 +13,8 @@ import (
 
 func TestLinterBasic(t *testing.T) {
 	linter := kubelint.NewDefaultLinter()
-	linter.AddDeploymentRule(
-		&kubelint.DeploymentRule{
+	linter.AddAppsV1DeploymentRule(
+		&kubelint.AppsV1DeploymentRule{
 			ID: "DEPLOYMENT_NAME_CONTAINS_APPLE",
 			Condition: func(d *appsv1.Deployment) bool {
 				return strings.Contains(d.Name, "apple")
@@ -37,6 +37,7 @@ metadata:
 	for _, result := range results {
 		t.Log(result.Message)
 	}
+	t.Log(len(errs))
 	for _, err := range errs {
 		t.Error(err)
 	}
@@ -50,5 +51,22 @@ metadata:
 	}
 	for _, desc := range fixDescriptions {
 		t.Logf("* %s\n", desc)
+	}
+}
+
+func TestLinterInterdependentRule(t *testing.T) {
+	linter := kubelint.NewDefaultLinter()
+	linter.AddAppsV1DeploymentRule(kubelint.APPSV1_DEPLOYMENT_WITHIN_NAMESPACE)
+	d := []byte(`kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: doggy
+`)
+	results, errs := linter.LintBytes(d, "FAKE_DEPLOYMENT.yaml")
+	for _, result := range results {
+		t.Log(result.Message)
+	}
+	for _, err := range errs {
+		t.Error(err)
 	}
 }

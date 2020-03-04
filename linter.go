@@ -33,6 +33,8 @@ type Linter struct {
 	rbacV1Beta1RoleBindingRules         []*RbacV1Beta1RoleBindingRule         // a register for all user-defined rbacV1Beta1RoleBinding rules
 	v1ServiceAccountRules               []*V1ServiceAccountRule               // a register for all user-defined v1ServiceAccount rules
 	v1ServiceRules                      []*V1ServiceRule                      // a register for all user-defined v1Service rules
+	genericRules                        []*GenericRule                        // a register for all user-defined Generic rules (applied to every object)
+	interdependentRules                 []*InterdependentRule                 // a register for all user-defined Interdependent rules (applied to the system as a whole)
 	fixes                               []*RuleSorter                         // fixes that should be applied to the resources in order to mitigate some errors on a future pass
 	resources                           []*Resource                           // All the resources that have been read in by this linter
 }
@@ -57,45 +59,70 @@ func (l *Linter) Lint(filepaths ...string) ([]*Result, []error) {
 	}
 	errors = append(errors, errs...)
 	var results []*Result
+	// add interdependent checks
+	results = append(results, l.LintResources(resources)...)
 	for _, resource := range resources {
 		r, err := l.LintResource(resource)
 		results = append(results, r...)
-		errors = append(errors, err)
+		if err != nil {
+			errors = append(errors, err)
+		}
 	}
 	return results, errors
 }
 
+/**
+*	LintBytes takes a slice of bytes to lint and a filepath and
+*	returns a list of Results and errors to report or log later on
+**/
 func (l *Linter) LintBytes(data []byte, filepath string) ([]*Result, []error) {
 	resources, errors := ReadBytes(data, filepath)
 	for _, resource := range resources {
 		l.resources = append(l.resources, &resource.Resource)
 	}
 	var results []*Result
+	// add interdependent checks
+	results = append(results, l.LintResources(resources)...)
 	for _, resource := range resources {
 		r, err := l.LintResource(resource)
 		results = append(results, r...)
-		errors = append(errors, err)
+		if err != nil {
+			errors = append(errors, err)
+		}
 	}
 	return results, errors
 }
 
+/**
+*	LintFile takes a file pointer and returns a list of Reults and Errors
+*	to be logged or reported later on
+**/
 func (l *Linter) LintFile(file *os.File) ([]*Result, []error) {
 	resources, errors := ReadFile(file)
 	for _, resource := range resources {
 		l.resources = append(l.resources, &resource.Resource)
 	}
 	var results []*Result
+	// add interdependent checks
+	results = append(results, l.LintResources(resources)...)
 	for _, resource := range resources {
 		r, err := l.LintResource(resource)
 		results = append(results, r...)
-		errors = append(errors, err)
+		if err != nil {
+			errors = append(errors, err)
+		}
 	}
 	return results, errors
 }
 
-func (l *Linter) LintResource(resource *YamlDerivedResource) ([]*Result, error) {
+/**
+*	LintResources takes a list of Yaml Derived Resources, applying interdependent rules ONLY
+*   and returns a list of Results
+*	to be logged or reported
+**/
+func (l *Linter) LintResources(resources []*YamlDerivedResource) []*Result {
 	var results []*Result
-	rules, err := l.createRules(&resource.Resource)
+	rules := l.createInterdependentRules(resources)
 	ruleSorter := NewRuleSorter(rules)
 	fixSorter := ruleSorter.Clone()
 	l.fixes = append(l.fixes, fixSorter)
@@ -103,16 +130,49 @@ func (l *Linter) LintResource(resource *YamlDerivedResource) ([]*Result, error) 
 		rule := ruleSorter.PopNextAvailable()
 		if !rule.Condition() {
 			results = append(results, &Result{
-				Resource: resource,
-				Message:  rule.Message,
-				Level:    rule.Level,
+				Resources: resources,
+				Message:   rule.Message,
+				Level:     rule.Level,
 			})
 			dependentRules := ruleSorter.PopDependentRules(rule.ID)
 			for _, dependentRule := range dependentRules {
 				results = append(results, &Result{
-					Resource: resource,
-					Message:  dependentRule.Message,
-					Level:    dependentRule.Level,
+					Resources: resources,
+					Message:   dependentRule.Message,
+					Level:     dependentRule.Level,
+				})
+			}
+		} else {
+			fixSorter.Remove(rule.ID)
+		}
+	}
+	return results
+}
+
+/**
+* LintResource takes a yaml derived resource and returns a list of results and errors
+* to be logged or reported
+**/
+func (l *Linter) LintResource(resource *YamlDerivedResource) ([]*Result, error) {
+	var results []*Result
+	rules, err := l.createRules(resource)
+	ruleSorter := NewRuleSorter(rules)
+	fixSorter := ruleSorter.Clone()
+	l.fixes = append(l.fixes, fixSorter)
+	for !ruleSorter.IsEmpty() {
+		rule := ruleSorter.PopNextAvailable()
+		if !rule.Condition() {
+			results = append(results, &Result{
+				Resources: []*YamlDerivedResource{resource},
+				Message:   rule.Message,
+				Level:     rule.Level,
+			})
+			dependentRules := ruleSorter.PopDependentRules(rule.ID)
+			for _, dependentRule := range dependentRules {
+				results = append(results, &Result{
+					Resources: []*YamlDerivedResource{resource},
+					Message:   dependentRule.Message,
+					Level:     dependentRule.Level,
 				})
 			}
 		} else {
@@ -144,65 +204,83 @@ func (l *Linter) ApplyFixes() ([]*Resource, []string) {
 }
 
 /**
+*	CreateRules finds the registered interdependent rules and transforms them
+*	to generic rules by applying the ydrs parameter.
+**/
+func (l *Linter) createInterdependentRules(ydrs []*YamlDerivedResource) []*Rule {
+	var rules []*Rule
+	for _, interdependentRule := range l.interdependentRules {
+		rules = append(rules, interdependentRule.CreateRule(ydrs))
+	}
+	return rules
+}
+
+/**
 * createRules finds the type-appropriate rules that are registered in the linter
-* and transforms them to generic rulese by applying the resource parameter.
+* and transforms them to generic rules by applying the resource parameter.
 * Then the list of rules are returned. I think I put it into a ruleSorter later on.
 **/
-func (l *Linter) createRules(resource *Resource) ([]*Rule, error) {
+func (l *Linter) createRules(ydr *YamlDerivedResource) ([]*Rule, error) {
 	var rules []*Rule
+	resource := &ydr.Resource
 
+	// generic rules always need to be added
+	for _, genericRule := range l.genericRules {
+		rules = append(rules, genericRule.CreateRule(resource, ydr))
+	}
+	// append type-specific rules
 	switch concrete := resource.Object.(type) {
 	case *appsv1.Deployment:
 		for _, deploymentRule := range l.appsV1DeploymentRules {
-			rules = append(rules, deploymentRule.CreateRule(concrete))
+			rules = append(rules, deploymentRule.CreateRule(concrete, ydr))
 		}
 	case *v1.Namespace:
 		for _, v1NamespaceRule := range l.v1NamespaceRules {
-			rules = append(rules, v1NamespaceRule.CreateRule(concrete))
+			rules = append(rules, v1NamespaceRule.CreateRule(concrete, ydr))
 		}
 	case *v1.PersistentVolumeClaim:
 		for _, v1PersistentVolumeClaimRule := range l.v1PersistentVolumeClaimRules {
-			rules = append(rules, v1PersistentVolumeClaimRule.CreateRule(concrete))
+			rules = append(rules, v1PersistentVolumeClaimRule.CreateRule(concrete, ydr))
 		}
 	case *v1beta1Extensions.Deployment:
 		for _, v1Beta1ExtensionsDeploymentRule := range l.v1Beta1ExtensionsDeploymentRules {
-			rules = append(rules, v1Beta1ExtensionsDeploymentRule.CreateRule(concrete))
+			rules = append(rules, v1Beta1ExtensionsDeploymentRule.CreateRule(concrete, ydr))
 		}
 	case *batchV1.Job:
 		for _, batchV1JobRule := range l.batchV1JobRules {
-			rules = append(rules, batchV1JobRule.CreateRule(concrete))
+			rules = append(rules, batchV1JobRule.CreateRule(concrete, ydr))
 		}
 	case *batchV1beta1.CronJob:
 		for _, batchV1Beta1CronJobRule := range l.batchV1Beta1CronJobRules {
-			rules = append(rules, batchV1Beta1CronJobRule.CreateRule(concrete))
+			rules = append(rules, batchV1Beta1CronJobRule.CreateRule(concrete, ydr))
 		}
 	case *v1beta1Extensions.Ingress:
 		for _, v1Beta1ExtensionsIngressRule := range l.v1Beta1ExtensionsIngressRules {
-			rules = append(rules, v1Beta1ExtensionsIngressRule.CreateRule(concrete))
+			rules = append(rules, v1Beta1ExtensionsIngressRule.CreateRule(concrete, ydr))
 		}
 	case *networkingV1.NetworkPolicy:
 		for _, networkingV1NetworkPolicyRule := range l.networkingV1NetworkPolicyRules {
-			rules = append(rules, networkingV1NetworkPolicyRule.CreateRule(concrete))
+			rules = append(rules, networkingV1NetworkPolicyRule.CreateRule(concrete, ydr))
 		}
 	case *v1beta1Extensions.NetworkPolicy:
 		for _, v1Beta1ExtensionsNetworkPolicyRule := range l.v1Beta1ExtensionsNetworkPolicyRules {
-			rules = append(rules, v1Beta1ExtensionsNetworkPolicyRule.CreateRule(concrete))
+			rules = append(rules, v1Beta1ExtensionsNetworkPolicyRule.CreateRule(concrete, ydr))
 		}
 	case *rbacV1.Role:
 		for _, rbacV1RoleRule := range l.rbacV1RoleRules {
-			rules = append(rules, rbacV1RoleRule.CreateRule(concrete))
+			rules = append(rules, rbacV1RoleRule.CreateRule(concrete, ydr))
 		}
 	case *rbacV1beta1.RoleBinding:
 		for _, rbacV1Beta1RoleBindingRule := range l.rbacV1Beta1RoleBindingRules {
-			rules = append(rules, rbacV1Beta1RoleBindingRule.CreateRule(concrete))
+			rules = append(rules, rbacV1Beta1RoleBindingRule.CreateRule(concrete, ydr))
 		}
 	case *v1.ServiceAccount:
 		for _, v1ServiceAccountRule := range l.v1ServiceAccountRules {
-			rules = append(rules, v1ServiceAccountRule.CreateRule(concrete))
+			rules = append(rules, v1ServiceAccountRule.CreateRule(concrete, ydr))
 		}
 	case *v1.Service:
 		for _, v1ServiceRule := range l.v1ServiceRules {
-			rules = append(rules, v1ServiceRule.CreateRule(concrete))
+			rules = append(rules, v1ServiceRule.CreateRule(concrete, ydr))
 		}
 
 	default:
@@ -313,4 +391,20 @@ func (l *Linter) AddV1ServiceAccountRule(rules ...*V1ServiceAccountRule) {
 **/
 func (l *Linter) AddV1ServiceRule(rules ...*V1ServiceRule) {
 	l.v1ServiceRules = append(l.v1ServiceRules, rules...)
+}
+
+/**
+*	AddGenericRule adds a custom rule (or many) so that anything sent through the linter
+*	has this rule applied to it.
+**/
+func (l *Linter) AddGenericRule(rules ...*GenericRule) {
+	l.genericRules = append(l.genericRules, rules...)
+}
+
+/**
+*	AddInterdependentRule adds a custom rule (or many) so that anything sent through the linter
+*	has this rule applied to it.
+**/
+func (l *Linter) AddInterdependentRule(rules ...*InterdependentRule) {
+	l.interdependentRules = append(l.interdependentRules, rules...)
 }

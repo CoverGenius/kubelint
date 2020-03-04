@@ -28,7 +28,7 @@ type Rule struct {
 
 /**
 *	This represents a generic rule that can be applied to a deployment object.
-* 	All other <Resource>Rule structs are analogous.
+* 	All other AppsV1DeploymentRule structs are analogous.
 **/
 type AppsV1DeploymentRule struct {
 	ID             RuleID
@@ -45,18 +45,31 @@ type AppsV1DeploymentRule struct {
 *	method bodies, and let every rule conform to the same structure.
 *	At this point, we have no information about where this resource came from.
 **/
-func (d *AppsV1DeploymentRule) CreateRule(deployment *appsv1.Deployment) *Rule {
-	resource, _ := ConvertToResource(deployment)
+func (d *AppsV1DeploymentRule) CreateRule(deployment *appsv1.Deployment, ydr *YamlDerivedResource) *Rule {
 	r := &Rule{
-		ID:        d.ID,
-		Prereqs:   d.Prereqs,
-		Condition: func() bool { return d.Condition(deployment) },
+		ID:      d.ID,
+		Prereqs: d.Prereqs,
+		Condition: func() bool {
+			if d.Condition == nil {
+				return true
+			}
+			return d.Condition(deployment)
+		},
 		Message:   d.Message,
 		Level:     d.Level,
-		Resources: []*YamlDerivedResource{&YamlDerivedResource{Resource: *resource}},
-
-		Fix:            func() bool { return d.Fix(deployment) },
-		FixDescription: func() string { return d.FixDescription(deployment) },
+		Resources: []*YamlDerivedResource{ydr},
+		Fix: func() bool {
+			if d.Fix == nil {
+				return false
+			}
+			return d.Fix(deployment)
+		},
+		FixDescription: func() string {
+			if d.FixDescription == nil {
+				return ""
+			}
+			return d.FixDescription(deployment)
+		},
 	}
 	return r
 }
@@ -75,21 +88,129 @@ type V1NamespaceRule struct {
 }
 
 /**
-* CreateRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
+* CreateRule transforms a V1NamespaceRule into a generic rule once it receives the parameter
 * to interpolate.
 **/
-func (r *V1NamespaceRule) CreateRule(namespace *v1.Namespace) *Rule {
-	resource, _ := ConvertToResource(namespace)
+func (r *V1NamespaceRule) CreateRule(namespace *v1.Namespace, ydr *YamlDerivedResource) *Rule {
 	rule := &Rule{
-		ID:        r.ID,
-		Prereqs:   r.Prereqs,
-		Condition: func() bool { return r.Condition(namespace) },
+		ID:      r.ID,
+		Prereqs: r.Prereqs,
+		Condition: func() bool {
+			if r.Condition == nil {
+				return true
+			}
+			return r.Condition(namespace)
+		},
 		Message:   r.Message,
 		Level:     r.Level,
-		Resources: []*YamlDerivedResource{&YamlDerivedResource{Resource: *resource}},
+		Resources: []*YamlDerivedResource{ydr},
 
-		Fix:            func() bool { return r.Fix(namespace) },
-		FixDescription: func() string { return r.FixDescription(namespace) },
+		Fix: func() bool {
+			if r.Fix == nil {
+				return false
+			}
+			return r.Fix(namespace)
+		},
+		FixDescription: func() string {
+			if r.FixDescription == nil {
+				return ""
+			}
+			return r.FixDescription(namespace)
+		},
+	}
+	return rule
+}
+
+/**
+*	V1PodSpecRule represents a generic linter rule that can be applied to any v1.Namespace object.
+**/
+type V1PodSpecRule struct {
+	ID             RuleID
+	Prereqs        []RuleID
+	Condition      func(*v1.PodSpec) bool
+	Message        string
+	Level          log.Level
+	Fix            func(*v1.PodSpec) bool
+	FixDescription func(*v1.PodSpec) string
+}
+
+/**
+* CreateRule transforms a V1PodSpecRule into a generic rule once it receives the parameter
+* to interpolate.
+**/
+func (r *V1PodSpecRule) CreateRule(podSpec *v1.PodSpec, ydr *YamlDerivedResource) *Rule {
+	rule := &Rule{
+		ID:      r.ID,
+		Prereqs: r.Prereqs,
+		Condition: func() bool {
+			if r.Condition == nil {
+				return true
+			}
+			return r.Condition(podSpec)
+		},
+		Message:   r.Message,
+		Level:     r.Level,
+		Resources: []*YamlDerivedResource{ydr},
+
+		Fix: func() bool {
+			if r.Fix == nil {
+				return false
+			}
+			return r.Fix(podSpec)
+		},
+		FixDescription: func() string {
+			if r.FixDescription == nil {
+				return ""
+			}
+			return r.FixDescription(podSpec)
+		},
+	}
+	return rule
+}
+
+/**
+*	V1ContainerRule represents a generic linter rule that can be applied to any v1.Namespace object.
+**/
+type V1ContainerRule struct {
+	ID             RuleID
+	Prereqs        []RuleID
+	Condition      func(*v1.Container) bool
+	Message        string
+	Level          log.Level
+	Fix            func(*v1.Container) bool
+	FixDescription func(*v1.Container) string
+}
+
+/**
+* CreateRule transforms a V1ContainerRule into a generic rule once it receives the parameter
+* to interpolate.
+**/
+func (r *V1ContainerRule) CreateRule(container *v1.Container, ydr *YamlDerivedResource) *Rule {
+	rule := &Rule{
+		ID:      r.ID,
+		Prereqs: r.Prereqs,
+		Condition: func() bool {
+			if r.Condition == nil {
+				return true
+			}
+			return r.Condition(container)
+		},
+		Message:   r.Message,
+		Level:     r.Level,
+		Resources: []*YamlDerivedResource{ydr},
+
+		Fix: func() bool {
+			if r.Fix == nil {
+				return false
+			}
+			return r.Fix(container)
+		},
+		FixDescription: func() string {
+			if r.FixDescription == nil {
+				return ""
+			}
+			return r.FixDescription(container)
+		},
 	}
 	return rule
 }
@@ -111,18 +232,31 @@ type V1PersistentVolumeClaimRule struct {
 * CreateRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
 * to interpolate.
 **/
-func (r *V1PersistentVolumeClaimRule) CreateRule(pvc *v1.PersistentVolumeClaim) *Rule {
-	resource, _ := ConvertToResource(pvc)
+func (r *V1PersistentVolumeClaimRule) CreateRule(pvc *v1.PersistentVolumeClaim, ydr *YamlDerivedResource) *Rule {
 	rule := &Rule{
-		ID:        r.ID,
-		Prereqs:   r.Prereqs,
-		Condition: func() bool { return r.Condition(pvc) },
+		ID:      r.ID,
+		Prereqs: r.Prereqs,
+		Condition: func() bool {
+			if r.Condition == nil {
+				return true
+			}
+			return r.Condition(pvc)
+		},
 		Message:   r.Message,
 		Level:     r.Level,
-		Resources: []*YamlDerivedResource{&YamlDerivedResource{Resource: *resource}},
-
-		Fix:            func() bool { return r.Fix(pvc) },
-		FixDescription: func() string { return r.FixDescription(pvc) },
+		Resources: []*YamlDerivedResource{ydr},
+		Fix: func() bool {
+			if r.Fix == nil {
+				return false
+			}
+			return r.Fix(pvc)
+		},
+		FixDescription: func() string {
+			if r.FixDescription == nil {
+				return ""
+			}
+			return r.FixDescription(pvc)
+		},
 	}
 	return rule
 }
@@ -141,21 +275,34 @@ type V1Beta1ExtensionsDeploymentRule struct {
 }
 
 /**
-* CreateRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
+* CreateRule transforms a V1Beta1ExtensionsDeploymentRule into a generic rule once it receives the parameter
 * to interpolate.
 **/
-func (r *V1Beta1ExtensionsDeploymentRule) CreateRule(deployment *v1beta1Extensions.Deployment) *Rule {
-	resource, _ := ConvertToResource(deployment)
+func (r *V1Beta1ExtensionsDeploymentRule) CreateRule(deployment *v1beta1Extensions.Deployment, ydr *YamlDerivedResource) *Rule {
 	rule := &Rule{
-		ID:        r.ID,
-		Prereqs:   r.Prereqs,
-		Condition: func() bool { return r.Condition(deployment) },
+		ID:      r.ID,
+		Prereqs: r.Prereqs,
+		Condition: func() bool {
+			if r.Condition == nil {
+				return true
+			}
+			return r.Condition(deployment)
+		},
 		Message:   r.Message,
 		Level:     r.Level,
-		Resources: []*YamlDerivedResource{&YamlDerivedResource{Resource: *resource}},
-
-		Fix:            func() bool { return r.Fix(deployment) },
-		FixDescription: func() string { return r.FixDescription(deployment) },
+		Resources: []*YamlDerivedResource{ydr},
+		Fix: func() bool {
+			if r.Fix == nil {
+				return false
+			}
+			return r.Fix(deployment)
+		},
+		FixDescription: func() string {
+			if r.FixDescription == nil {
+				return ""
+			}
+			return r.FixDescription(deployment)
+		},
 	}
 	return rule
 }
@@ -174,21 +321,34 @@ type BatchV1JobRule struct {
 }
 
 /**
-* CreateRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
+* CreateRule transforms a BatchV1JobRule into a generic rule once it receives the parameter
 * to interpolate.
 **/
-func (r *BatchV1JobRule) CreateRule(job *batchV1.Job) *Rule {
-	resource, _ := ConvertToResource(job)
+func (r *BatchV1JobRule) CreateRule(job *batchV1.Job, ydr *YamlDerivedResource) *Rule {
 	rule := &Rule{
-		ID:        r.ID,
-		Prereqs:   r.Prereqs,
-		Condition: func() bool { return r.Condition(job) },
+		ID:      r.ID,
+		Prereqs: r.Prereqs,
+		Condition: func() bool {
+			if r.Condition == nil {
+				return true
+			}
+			return r.Condition(job)
+		},
 		Message:   r.Message,
 		Level:     r.Level,
-		Resources: []*YamlDerivedResource{&YamlDerivedResource{Resource: *resource}},
-
-		Fix:            func() bool { return r.Fix(job) },
-		FixDescription: func() string { return r.FixDescription(job) },
+		Resources: []*YamlDerivedResource{ydr},
+		Fix: func() bool {
+			if r.Fix == nil {
+				return false
+			}
+			return r.Fix(job)
+		},
+		FixDescription: func() string {
+			if r.FixDescription == nil {
+				return ""
+			}
+			return r.FixDescription(job)
+		},
 	}
 	return rule
 }
@@ -207,21 +367,34 @@ type BatchV1Beta1CronJobRule struct {
 }
 
 /**
-* CreateRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
+* CreateRule transforms a BatchV1Beta1CronJobRule into a generic rule once it receives the parameter
 * to interpolate.
 **/
-func (r *BatchV1Beta1CronJobRule) CreateRule(cronjob *batchV1beta1.CronJob) *Rule {
-	resource, _ := ConvertToResource(cronjob)
+func (r *BatchV1Beta1CronJobRule) CreateRule(cronjob *batchV1beta1.CronJob, ydr *YamlDerivedResource) *Rule {
 	rule := &Rule{
-		ID:        r.ID,
-		Prereqs:   r.Prereqs,
-		Condition: func() bool { return r.Condition(cronjob) },
+		ID:      r.ID,
+		Prereqs: r.Prereqs,
+		Condition: func() bool {
+			if r.Condition == nil {
+				return true
+			}
+			return r.Condition(cronjob)
+		},
 		Message:   r.Message,
 		Level:     r.Level,
-		Resources: []*YamlDerivedResource{&YamlDerivedResource{Resource: *resource}},
-
-		Fix:            func() bool { return r.Fix(cronjob) },
-		FixDescription: func() string { return r.FixDescription(cronjob) },
+		Resources: []*YamlDerivedResource{ydr},
+		Fix: func() bool {
+			if r.Fix == nil {
+				return false
+			}
+			return r.Fix(cronjob)
+		},
+		FixDescription: func() string {
+			if r.FixDescription == nil {
+				return ""
+			}
+			return r.FixDescription(cronjob)
+		},
 	}
 	return rule
 }
@@ -243,18 +416,31 @@ type V1Beta1ExtensionsIngressRule struct {
 * CreateRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
 * to interpolate.
 **/
-func (r *V1Beta1ExtensionsIngressRule) CreateRule(ingress *v1beta1Extensions.Ingress) *Rule {
-	resource, _ := ConvertToResource(ingress)
+func (r *V1Beta1ExtensionsIngressRule) CreateRule(ingress *v1beta1Extensions.Ingress, ydr *YamlDerivedResource) *Rule {
 	rule := &Rule{
-		ID:        r.ID,
-		Prereqs:   r.Prereqs,
-		Condition: func() bool { return r.Condition(ingress) },
+		ID:      r.ID,
+		Prereqs: r.Prereqs,
+		Condition: func() bool {
+			if r.Condition == nil {
+				return true
+			}
+			return r.Condition(ingress)
+		},
 		Message:   r.Message,
 		Level:     r.Level,
-		Resources: []*YamlDerivedResource{&YamlDerivedResource{Resource: *resource}},
-
-		Fix:            func() bool { return r.Fix(ingress) },
-		FixDescription: func() string { return r.FixDescription(ingress) },
+		Resources: []*YamlDerivedResource{ydr},
+		Fix: func() bool {
+			if r.Fix == nil {
+				return false
+			}
+			return r.Fix(ingress)
+		},
+		FixDescription: func() string {
+			if r.FixDescription == nil {
+				return ""
+			}
+			return r.FixDescription(ingress)
+		},
 	}
 	return rule
 }
@@ -273,21 +459,34 @@ type NetworkingV1NetworkPolicyRule struct {
 }
 
 /**
-* CreateRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
+* CreateRule transforms a NetworkingV1NetworkPolicyRule into a generic rule once it receives the parameter
 * to interpolate.
 **/
-func (r *NetworkingV1NetworkPolicyRule) CreateRule(networkpolicy *networkingV1.NetworkPolicy) *Rule {
-	resource, _ := ConvertToResource(networkpolicy)
+func (r *NetworkingV1NetworkPolicyRule) CreateRule(networkpolicy *networkingV1.NetworkPolicy, ydr *YamlDerivedResource) *Rule {
 	rule := &Rule{
-		ID:        r.ID,
-		Prereqs:   r.Prereqs,
-		Condition: func() bool { return r.Condition(networkpolicy) },
+		ID:      r.ID,
+		Prereqs: r.Prereqs,
+		Condition: func() bool {
+			if r.Condition == nil {
+				return true
+			}
+			return r.Condition(networkpolicy)
+		},
 		Message:   r.Message,
 		Level:     r.Level,
-		Resources: []*YamlDerivedResource{&YamlDerivedResource{Resource: *resource}},
-
-		Fix:            func() bool { return r.Fix(networkpolicy) },
-		FixDescription: func() string { return r.FixDescription(networkpolicy) },
+		Resources: []*YamlDerivedResource{ydr},
+		Fix: func() bool {
+			if r.Fix == nil {
+				return false
+			}
+			return r.Fix(networkpolicy)
+		},
+		FixDescription: func() string {
+			if r.FixDescription == nil {
+				return ""
+			}
+			return r.FixDescription(networkpolicy)
+		},
 	}
 	return rule
 }
@@ -309,18 +508,31 @@ type V1Beta1ExtensionsNetworkPolicyRule struct {
 * CreateRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
 * to interpolate.
 **/
-func (r *V1Beta1ExtensionsNetworkPolicyRule) CreateRule(networkpolicy *v1beta1Extensions.NetworkPolicy) *Rule {
-	resource, _ := ConvertToResource(networkpolicy)
+func (r *V1Beta1ExtensionsNetworkPolicyRule) CreateRule(networkpolicy *v1beta1Extensions.NetworkPolicy, ydr *YamlDerivedResource) *Rule {
 	rule := &Rule{
-		ID:        r.ID,
-		Prereqs:   r.Prereqs,
-		Condition: func() bool { return r.Condition(networkpolicy) },
+		ID:      r.ID,
+		Prereqs: r.Prereqs,
+		Condition: func() bool {
+			if r.Condition == nil {
+				return true
+			}
+			return r.Condition(networkpolicy)
+		},
 		Message:   r.Message,
 		Level:     r.Level,
-		Resources: []*YamlDerivedResource{&YamlDerivedResource{Resource: *resource}},
-
-		Fix:            func() bool { return r.Fix(networkpolicy) },
-		FixDescription: func() string { return r.FixDescription(networkpolicy) },
+		Resources: []*YamlDerivedResource{ydr},
+		Fix: func() bool {
+			if r.Fix == nil {
+				return false
+			}
+			return r.Fix(networkpolicy)
+		},
+		FixDescription: func() string {
+			if r.FixDescription == nil {
+				return ""
+			}
+			return r.FixDescription(networkpolicy)
+		},
 	}
 	return rule
 }
@@ -339,21 +551,34 @@ type RbacV1RoleRule struct {
 }
 
 /**
-* CreateRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
+* CreateRule transforms a RbacV1RoleRule into a generic rule once it receives the parameter
 * to interpolate.
 **/
-func (r *RbacV1RoleRule) CreateRule(role *rbacV1.Role) *Rule {
-	resource, _ := ConvertToResource(role)
+func (r *RbacV1RoleRule) CreateRule(role *rbacV1.Role, ydr *YamlDerivedResource) *Rule {
 	rule := &Rule{
-		ID:        r.ID,
-		Prereqs:   r.Prereqs,
-		Condition: func() bool { return r.Condition(role) },
+		ID:      r.ID,
+		Prereqs: r.Prereqs,
+		Condition: func() bool {
+			if r.Condition == nil {
+				return true
+			}
+			return r.Condition(role)
+		},
 		Message:   r.Message,
 		Level:     r.Level,
-		Resources: []*YamlDerivedResource{&YamlDerivedResource{Resource: *resource}},
-
-		Fix:            func() bool { return r.Fix(role) },
-		FixDescription: func() string { return r.FixDescription(role) },
+		Resources: []*YamlDerivedResource{ydr},
+		Fix: func() bool {
+			if r.Fix == nil {
+				return false
+			}
+			return r.Fix(role)
+		},
+		FixDescription: func() string {
+			if r.FixDescription == nil {
+				return ""
+			}
+			return r.FixDescription(role)
+		},
 	}
 	return rule
 }
@@ -372,21 +597,34 @@ type RbacV1Beta1RoleBindingRule struct {
 }
 
 /**
-* CreateRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
+* CreateRule transforms a RbacV1Beta1RoleBindingRule into a generic rule once it receives the parameter
 * to interpolate.
 **/
-func (r *RbacV1Beta1RoleBindingRule) CreateRule(rolebinding *rbacV1beta1.RoleBinding) *Rule {
-	resource, _ := ConvertToResource(rolebinding)
+func (r *RbacV1Beta1RoleBindingRule) CreateRule(rolebinding *rbacV1beta1.RoleBinding, ydr *YamlDerivedResource) *Rule {
 	rule := &Rule{
-		ID:        r.ID,
-		Prereqs:   r.Prereqs,
-		Condition: func() bool { return r.Condition(rolebinding) },
+		ID:      r.ID,
+		Prereqs: r.Prereqs,
+		Condition: func() bool {
+			if r.Condition == nil {
+				return true
+			}
+			return r.Condition(rolebinding)
+		},
 		Message:   r.Message,
 		Level:     r.Level,
-		Resources: []*YamlDerivedResource{&YamlDerivedResource{Resource: *resource}},
-
-		Fix:            func() bool { return r.Fix(rolebinding) },
-		FixDescription: func() string { return r.FixDescription(rolebinding) },
+		Resources: []*YamlDerivedResource{ydr},
+		Fix: func() bool {
+			if r.Fix == nil {
+				return false
+			}
+			return r.Fix(rolebinding)
+		},
+		FixDescription: func() string {
+			if r.FixDescription == nil {
+				return ""
+			}
+			return r.FixDescription(rolebinding)
+		},
 	}
 	return rule
 }
@@ -408,18 +646,31 @@ type V1ServiceAccountRule struct {
 * CreateRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
 * to interpolate.
 **/
-func (r *V1ServiceAccountRule) CreateRule(serviceaccount *v1.ServiceAccount) *Rule {
-	resource, _ := ConvertToResource(serviceaccount)
+func (r *V1ServiceAccountRule) CreateRule(serviceaccount *v1.ServiceAccount, ydr *YamlDerivedResource) *Rule {
 	rule := &Rule{
-		ID:        r.ID,
-		Prereqs:   r.Prereqs,
-		Condition: func() bool { return r.Condition(serviceaccount) },
+		ID:      r.ID,
+		Prereqs: r.Prereqs,
+		Condition: func() bool {
+			if r.Condition == nil {
+				return true
+			}
+			return r.Condition(serviceaccount)
+		},
 		Message:   r.Message,
 		Level:     r.Level,
-		Resources: []*YamlDerivedResource{&YamlDerivedResource{Resource: *resource}},
-
-		Fix:            func() bool { return r.Fix(serviceaccount) },
-		FixDescription: func() string { return r.FixDescription(serviceaccount) },
+		Resources: []*YamlDerivedResource{ydr},
+		Fix: func() bool {
+			if r.Fix == nil {
+				return false
+			}
+			return r.Fix(serviceaccount)
+		},
+		FixDescription: func() string {
+			if r.FixDescription == nil {
+				return ""
+			}
+			return r.FixDescription(serviceaccount)
+		},
 	}
 	return rule
 }
@@ -438,21 +689,134 @@ type V1ServiceRule struct {
 }
 
 /**
-* CreateRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
+* CreateRule transforms a V1ServiceRule into a generic rule once it receives the parameter
 * to interpolate.
 **/
-func (r *V1ServiceRule) CreateRule(service *v1.Service) *Rule {
-	resource, _ := ConvertToResource(service)
+func (r *V1ServiceRule) CreateRule(service *v1.Service, ydr *YamlDerivedResource) *Rule {
 	rule := &Rule{
-		ID:        r.ID,
-		Prereqs:   r.Prereqs,
-		Condition: func() bool { return r.Condition(service) },
+		ID:      r.ID,
+		Prereqs: r.Prereqs,
+		Condition: func() bool {
+			if r.Condition == nil {
+				return true
+			}
+			return r.Condition(service)
+		},
 		Message:   r.Message,
 		Level:     r.Level,
-		Resources: []*YamlDerivedResource{&YamlDerivedResource{Resource: *resource}},
+		Resources: []*YamlDerivedResource{ydr},
+		Fix: func() bool {
+			if r.Fix == nil {
+				return false
+			}
+			return r.Fix(service)
+		},
+		FixDescription: func() string {
+			if r.FixDescription == nil {
+				return ""
+			}
+			return r.FixDescription(service)
+		},
+	}
+	return rule
+}
 
-		Fix:            func() bool { return r.Fix(service) },
-		FixDescription: func() string { return r.FixDescription(service) },
+/**
+*	GenericRule represents a generic linter rule that can be applied to an object of any type.
+*	Use this if the type you want to apply a check to is not currently supported, or it's a check
+*	that can apply uniformly to all resources, for example, each resource is registered under a namespace.
+**/
+type GenericRule struct {
+	ID             RuleID
+	Prereqs        []RuleID
+	Condition      func(*Resource) bool
+	Message        string
+	Level          log.Level
+	Fix            func(*Resource) bool
+	FixDescription func(*Resource) string
+}
+
+/**
+* CreateRule transforms a GenericRule into a generic rule once it receives the parameter
+* to interpolate.
+**/
+func (r *GenericRule) CreateRule(resource *Resource, ydr *YamlDerivedResource) *Rule {
+	rule := &Rule{
+		ID:      r.ID,
+		Prereqs: r.Prereqs,
+		Condition: func() bool {
+			if r.Condition == nil {
+				return true
+			}
+			return r.Condition(resource)
+		},
+		Message:   r.Message,
+		Level:     r.Level,
+		Resources: []*YamlDerivedResource{ydr},
+		Fix: func() bool {
+			if r.Fix == nil {
+				return false
+			}
+			return r.Fix(resource)
+		},
+		FixDescription: func() string {
+			if r.FixDescription == nil {
+				return ""
+			}
+			return r.FixDescription(resource)
+		},
+	}
+	return rule
+}
+
+/**
+*	InterdependentRule represents a generic linter rule that will be applied to the resources as a whole.
+*	An example would be to check that for all objects, their namespace corresponds to an existing namespace object.
+*	You will need to do your own typecasting or rely on the methods available to you in metav1.Object and meta.Type to access the objects' fields.
+**/
+type InterdependentRule struct {
+	ID             RuleID
+	Prereqs        []RuleID
+	Condition      func([]*Resource) bool
+	Message        string
+	Level          log.Level
+	Fix            func([]*Resource) bool
+	FixDescription func([]*Resource) string
+}
+
+/**
+* CreateRule transforms a InterdependentRule into a generic rule once it receives the parameter
+* to interpolate.
+**/
+func (r *InterdependentRule) CreateRule(resources []*YamlDerivedResource) *Rule {
+	var bareResources []*Resource
+	for _, r := range resources {
+		bareResources = append(bareResources, &r.Resource)
+	}
+	rule := &Rule{
+		ID:      r.ID,
+		Prereqs: r.Prereqs,
+		Condition: func() bool {
+			if r.Condition == nil {
+				return true
+			}
+			return r.Condition(bareResources)
+		},
+		Message:   r.Message,
+		Level:     r.Level,
+		Resources: resources,
+		Fix: func() bool {
+			if r.Fix == nil {
+				return false
+			}
+			return r.Fix(bareResources)
+		},
+		FixDescription: func() string {
+			if r.FixDescription == nil {
+				return ""
+			}
+			return r.FixDescription(bareResources)
+		},
 	}
 	return rule
 }
