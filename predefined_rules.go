@@ -24,7 +24,7 @@ import (
 * Predefined rules relating to resources of type v1.PodSpec
 * - A V1PodSpec should have a non-nil security context * V1_PODSPEC_NON_NIL_SECURITY_CONTEXT
 * - A V1PodSpec should specify runAsNonRoot: true * V1_PODSPEC_RUN_AS_NON_ROOT
-* - A V1PodSpec should have a user and group ID of 44444 * V1_PODSPEC_CORRECT_USER_GROUP_ID
+* - A V1PodSpec should have a user and group ID of 44444 * CT_USER_GROUP_ID
 * - A V1PodSpec should have exactly one container * V1_PODSPEC_EXACTLY_1_CONTAINER
 * - A V1PodSpec should have a non-zero number of containers * V1_PODSPEC_NON_ZERO_CONTAINERS
 * Predefined rules relating to resources of type v1.Container

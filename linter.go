@@ -22,6 +22,8 @@ import (
 type Linter struct {
 	appsV1DeploymentRules               []*AppsV1DeploymentRule               // a register for all user-defined appsV1Deployment rules
 	v1NamespaceRules                    []*V1NamespaceRule                    // a register for all user-defined v1Namespace rules
+	v1PodSpecRules                      []*V1PodSpecRule                      // a register for all user-defined v1PodSpec rules
+	v1ContainerRules                    []*V1ContainerRule                    // a register for all user-defined v1Container rules
 	v1PersistentVolumeClaimRules        []*V1PersistentVolumeClaimRule        // a register for all user-defined v1PersistentVolumeClaim rules
 	v1Beta1ExtensionsDeploymentRules    []*V1Beta1ExtensionsDeploymentRule    // a register for all user-defined v1Beta1ExtensionsDeployment rules
 	batchV1JobRules                     []*BatchV1JobRule                     // a register for all user-defined batchV1Job rules
@@ -234,6 +236,14 @@ func (l *Linter) createRules(ydr *YamlDerivedResource) ([]*Rule, error) {
 		for _, deploymentRule := range l.appsV1DeploymentRules {
 			rules = append(rules, deploymentRule.CreateRule(concrete, ydr))
 		}
+		for _, podSpecRule := range l.v1PodSpecRules {
+			rules = append(rules, podSpecRule.CreateRule(&concrete.Spec.Template.Spec, ydr))
+		}
+		for _, v1ContainerRule := range l.v1ContainerRules {
+			for i, _ := range concrete.Spec.Template.Spec.Containers {
+				rules = append(rules, v1ContainerRule.CreateRule(&concrete.Spec.Template.Spec.Containers[i], ydr))
+			}
+		}
 	case *v1.Namespace:
 		for _, v1NamespaceRule := range l.v1NamespaceRules {
 			rules = append(rules, v1NamespaceRule.CreateRule(concrete, ydr))
@@ -303,6 +313,22 @@ func (l *Linter) AddAppsV1DeploymentRule(rules ...*AppsV1DeploymentRule) {
 **/
 func (l *Linter) AddV1NamespaceRule(rules ...*V1NamespaceRule) {
 	l.v1NamespaceRules = append(l.v1NamespaceRules, rules...)
+}
+
+/**
+*	AddV1PodSpecRule adds a custom rule (or many) so that anything sent through the linter of the correct type
+*	has this rule applied to it.
+**/
+func (l *Linter) AddV1PodSpecRule(rules ...*V1PodSpecRule) {
+	l.v1PodSpecRules = append(l.v1PodSpecRules, rules...)
+}
+
+/**
+*	AddV1ContainerRule adds a custom rule (or many) so that anything sent through the linter of the correct type
+*	has this rule applied to it.
+**/
+func (l *Linter) AddV1ContainerRule(rules ...*V1ContainerRule) {
+	l.v1ContainerRules = append(l.v1ContainerRules, rules...)
 }
 
 /**

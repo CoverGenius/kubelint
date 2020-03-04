@@ -137,7 +137,7 @@ func (r *RuleSorter) PopNextAvailable() *Rule {
 	// If we don't have any empty edges list, that means
 	// we have a cycle somewhere
 	if cycle {
-		panic("There is a cycle in your rule dependencies, you can't do it like this")
+		panic("Either there's a cycle in your dependencies OR you've forgotten to include a prerequisite rule. Please be more careful")
 	}
 	for _, id := range r.getDependents(ruleId) {
 		// update their edges so that they don't remember ruleId anymore!
