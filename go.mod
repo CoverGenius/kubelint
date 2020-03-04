@@ -1,4 +1,4 @@
-module github.com/rdowavic/kubelint
+module github.com/CoverGenius/kubelint
 
 go 1.13
 

@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	"github.com/rdowavic/kubelint"
+	"github.com/CoverGenius/kubelint"
 )
 
 func TestReadBytes(t *testing.T) {
