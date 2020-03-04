@@ -54,7 +54,7 @@ metadata:
 	}
 }
 
-func TestLinterInterdependentRule(t *testing.T) {
+func TestLinterPredefinedRule(t *testing.T) {
 	linter := kubelint.NewDefaultLinter()
 	linter.AddAppsV1DeploymentRule(kubelint.APPSV1_DEPLOYMENT_WITHIN_NAMESPACE)
 	d := []byte(`kind: Deployment
@@ -69,4 +69,42 @@ metadata:
 	for _, err := range errs {
 		t.Error(err)
 	}
+}
+
+func TestLinterInterdependentRule(t *testing.T) {
+	linter := kubelint.NewDefaultLinter()
+	linter.AddInterdependentRule(&kubelint.InterdependentRule{
+		ID:      "INTERDEPENDENT_NO_DUPLICATES",
+		Message: "The unit shouldn't contain duplicate resources (same name/kind)",
+		Condition: func(resources []*kubelint.Resource) bool {
+			nameKind := make(map[string]string) // a set storing <name><kind>
+			for _, resource := range resources {
+				nk := resource.Object.GetName() + resource.TypeInfo.GetKind()
+				if _, exists := nameKind[nk]; exists {
+					return false
+				}
+				nameKind[nk] = nk
+			}
+			return true
+		},
+	})
+	bytes := []byte(`kind: Service
+apiVersion: v1
+metadata:
+  name: barista
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: barista
+`)
+	results, errs := linter.LintBytes(bytes, "FAKE.yaml")
+
+	for _, result := range results {
+		t.Log(result.Message)
+	}
+	for _, err := range errs {
+		t.Error(err)
+	}
+
 }
