@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/rdowavic/kubelint"
+	"github.com/CoverGenius/kubelint"
 	log "github.com/sirupsen/logrus"
 )
 
