@@ -24,7 +24,7 @@ import (
 * Predefined rules relating to resources of type v1.PodSpec
 * - A V1PodSpec should have a non-nil security context * V1_PODSPEC_NON_NIL_SECURITY_CONTEXT
 * - A V1PodSpec should specify runAsNonRoot: true * V1_PODSPEC_RUN_AS_NON_ROOT
-* - A V1PodSpec should have a user and group ID of 44444 * CT_USER_GROUP_ID
+* - A V1PodSpec should have a user and group ID of 44444 * V1_PODSPEC_CORRECT_USER_GROUP_ID
 * - A V1PodSpec should have exactly one container * V1_PODSPEC_EXACTLY_1_CONTAINER
 * - A V1PodSpec should have a non-zero number of containers * V1_PODSPEC_NON_ZERO_CONTAINERS
 * Predefined rules relating to resources of type v1.Container
@@ -34,13 +34,16 @@ import (
 * - A V1Container should have privileged set to false * V1_CONTAINER_PRIVILEGED_FALSE
 * - A V1Container should specify Resource Limits and Requests * V1_CONTAINER_EXISTS_RESOURCE_LIMITS_AND_REQUESTS
 * - A V1Container should make CPU requests that are less than or equal to 100% * V1_CONTAINER_REQUESTS_CPU_REASONABLE
-* Predefined rules relating to resources of type batchV1.Job
-* - A BatchV1Beta1CronJob should be within a namespace
+* Predefined rules relating to resources of type batchV1beta1.CronJob
+* - A BatchV1Beta1CronJob should be within a namespace * BATCHV1_BETA1_CRONJOB_WITHIN_NAMESPACE
 * - A BatchV1Beta1CronJob should forbid concurrent operations * BATCHV1_BETA1_CRONJOB_FORBID_CONCURRENT
+* Predefined rules relating to resources of type batchV1.Job
 * - A BatchV1Job should be within a namespace * BATCHV1_JOB_WITHIN_NAMESPACE
 * - A BatchV1Job's restart policy should be set to Never * BATCHV1_JOB_RESTART_NEVER
 * - A BatchV1Job's Time to Live should be set * BATCHV1_JOB_EXISTS_TTL
+* Predefined rules relating to resources of type v1.Namespace
 * - A namespace should have a valid DNS name * V1_NAMESPACE_VALID_DNS
+* Predefined rules relating to resources of type v1.Service
 * - A V1Service should be within a namespace * V1_SERVICE_WITHIN_NAMESPACE
 * - A V1Service name should be a valid DNS * V1_SERVICE_NAME_VALID_DNS
 **/
