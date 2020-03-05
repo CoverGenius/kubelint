@@ -65,6 +65,7 @@ func (l *Linter) Lint(filepaths ...string) ([]*Result, []error) {
 	results = append(results, l.LintResources(resources)...)
 	for _, resource := range resources {
 		r, err := l.LintResource(resource)
+		fmt.Println(r)
 		results = append(results, r...)
 		if err != nil {
 			errors = append(errors, err)
