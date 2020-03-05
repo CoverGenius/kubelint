@@ -2,6 +2,7 @@ package kubelint
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	batchV1 "k8s.io/api/batch/v1"
 	batchV1beta1 "k8s.io/api/batch/v1beta1"
@@ -20,6 +21,7 @@ import (
 *	Also some utility methods for input handling.
 **/
 type Linter struct {
+	logger                              *log.Logger
 	appsV1DeploymentRules               []*AppsV1DeploymentRule               // a register for all user-defined appsV1Deployment rules
 	v1NamespaceRules                    []*V1NamespaceRule                    // a register for all user-defined v1Namespace rules
 	v1PodSpecRules                      []*V1PodSpecRule                      // a register for all user-defined v1PodSpec rules
@@ -49,6 +51,10 @@ func NewDefaultLinter() *Linter {
 	return &Linter{}
 }
 
+func NewLinter(l *log.Logger) *Linter {
+	return &Linter{logger: l}
+}
+
 /**
 * Lint opens and lints the files and produces results that
 * can be logged later on
@@ -65,7 +71,7 @@ func (l *Linter) Lint(filepaths ...string) ([]*Result, []error) {
 	results = append(results, l.LintResources(resources)...)
 	for _, resource := range resources {
 		r, err := l.LintResource(resource)
-		fmt.Println(r)
+		l.logger.Debugln("results from linting", resource.Filepath, r)
 		results = append(results, r...)
 		if err != nil {
 			errors = append(errors, err)
@@ -159,11 +165,13 @@ func (l *Linter) LintResources(resources []*YamlDerivedResource) []*Result {
 func (l *Linter) LintResource(resource *YamlDerivedResource) ([]*Result, error) {
 	var results []*Result
 	rules, err := l.createRules(resource)
+	l.logger.Debugln(len(rules), "rules created for", resource.Filepath)
 	ruleSorter := NewRuleSorter(rules)
 	fixSorter := ruleSorter.Clone()
 	l.fixes = append(l.fixes, fixSorter)
 	for !ruleSorter.IsEmpty() {
 		rule := ruleSorter.PopNextAvailable()
+		l.logger.Debugln("Testing rule", rule.ID)
 		if !rule.Condition() {
 			results = append(results, &Result{
 				Resources: []*YamlDerivedResource{resource},
