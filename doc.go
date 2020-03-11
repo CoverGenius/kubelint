@@ -8,9 +8,13 @@ but kubelint also provides some utility functions to write kubernetes resources 
 
 To summarise, the main objectives you can fulfill with kubelint are:
 1. Linting YAML kubernetes resource for correctness
+
 2. Reporting resource definition errors
+
 3. Automatically applying fixes to resource definitions
+
 4. Writing kubernetes resources to a file
+
 5. Obtaining the bytes representation of a fixed resource definition
 
 This is how to set up the linter to check that every deployment has runAsNonRoot: true.
