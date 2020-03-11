@@ -15,7 +15,7 @@ import (
 // The unique identifier for a rule. This lets us define an execution order with the Prereqs field.
 type RuleID string
 
-type Rule struct {
+type rule struct {
 	ID             RuleID   // a string that uniquely identifies this rule wrt an object
 	Prereqs        []RuleID // rules that this rule relies on for safe execution
 	Condition      func() bool
@@ -41,8 +41,8 @@ type AppsV1DeploymentRule struct {
 //	Once we get a reference to an actual resource, we can interpolate this into the
 //	method bodies, and let every rule conform to the same structure.
 //	At this point, we have no information about where this resource came from.
-func (d *AppsV1DeploymentRule) CreateRule(deployment *appsv1.Deployment, ydr *YamlDerivedResource) *Rule {
-	r := &Rule{
+func (d *AppsV1DeploymentRule) createRule(deployment *appsv1.Deployment, ydr *YamlDerivedResource) *rule {
+	r := &rule{
 		ID:      d.ID,
 		Prereqs: d.Prereqs,
 		Condition: func() bool {
@@ -81,10 +81,10 @@ type V1NamespaceRule struct {
 	FixDescription func(*v1.Namespace) string
 }
 
-// CreateRule transforms a V1NamespaceRule into a generic rule once it receives the parameter
+// createRule transforms a V1NamespaceRule into a generic rule once it receives the parameter
 // to interpolate.
-func (r *V1NamespaceRule) CreateRule(namespace *v1.Namespace, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+func (r *V1NamespaceRule) createRule(namespace *v1.Namespace, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -124,10 +124,10 @@ type V1PodSpecRule struct {
 	FixDescription func(*v1.PodSpec) string
 }
 
-// CreateRule transforms a V1PodSpecRule into a generic rule once it receives the parameter
+// createRule transforms a V1PodSpecRule into a generic rule once it receives the parameter
 // to interpolate.
-func (r *V1PodSpecRule) CreateRule(podSpec *v1.PodSpec, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+func (r *V1PodSpecRule) createRule(podSpec *v1.PodSpec, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -167,10 +167,10 @@ type V1ContainerRule struct {
 	FixDescription func(*v1.Container) string
 }
 
-// CreateRule transforms a V1ContainerRule into a generic rule once it receives the parameter
+// createRule transforms a V1ContainerRule into a generic rule once it receives the parameter
 // to interpolate.
-func (r *V1ContainerRule) CreateRule(container *v1.Container, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+func (r *V1ContainerRule) createRule(container *v1.Container, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -210,10 +210,10 @@ type V1PersistentVolumeClaimRule struct {
 	FixDescription func(*v1.PersistentVolumeClaim) string
 }
 
-// CreateRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
+// createRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
 // to interpolate.
-func (r *V1PersistentVolumeClaimRule) CreateRule(pvc *v1.PersistentVolumeClaim, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+func (r *V1PersistentVolumeClaimRule) createRule(pvc *v1.PersistentVolumeClaim, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -252,10 +252,10 @@ type V1Beta1ExtensionsDeploymentRule struct {
 	FixDescription func(*v1beta1Extensions.Deployment) string
 }
 
-// CreateRule transforms a V1Beta1ExtensionsDeploymentRule into a generic rule once it receives the parameter
+// createRule transforms a V1Beta1ExtensionsDeploymentRule into a generic rule once it receives the parameter
 // to interpolate.
-func (r *V1Beta1ExtensionsDeploymentRule) CreateRule(deployment *v1beta1Extensions.Deployment, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+func (r *V1Beta1ExtensionsDeploymentRule) createRule(deployment *v1beta1Extensions.Deployment, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -294,10 +294,10 @@ type BatchV1JobRule struct {
 	FixDescription func(*batchV1.Job) string
 }
 
-// CreateRule transforms a BatchV1JobRule into a generic rule once it receives the parameter
+// createRule transforms a BatchV1JobRule into a generic rule once it receives the parameter
 // to interpolate.
-func (r *BatchV1JobRule) CreateRule(job *batchV1.Job, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+func (r *BatchV1JobRule) createRule(job *batchV1.Job, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -336,10 +336,10 @@ type BatchV1Beta1CronJobRule struct {
 	FixDescription func(*batchV1beta1.CronJob) string
 }
 
-// CreateRule transforms a BatchV1Beta1CronJobRule into a generic rule once it receives the parameter
+// createRule transforms a BatchV1Beta1CronJobRule into a generic rule once it receives the parameter
 // to interpolate.
-func (r *BatchV1Beta1CronJobRule) CreateRule(cronjob *batchV1beta1.CronJob, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+func (r *BatchV1Beta1CronJobRule) createRule(cronjob *batchV1beta1.CronJob, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -378,10 +378,10 @@ type V1Beta1ExtensionsIngressRule struct {
 	FixDescription func(*v1beta1Extensions.Ingress) string
 }
 
-// CreateRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
+// createRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
 // to interpolate.
-func (r *V1Beta1ExtensionsIngressRule) CreateRule(ingress *v1beta1Extensions.Ingress, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+func (r *V1Beta1ExtensionsIngressRule) createRule(ingress *v1beta1Extensions.Ingress, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -420,10 +420,10 @@ type NetworkingV1NetworkPolicyRule struct {
 	FixDescription func(*networkingV1.NetworkPolicy) string
 }
 
-// CreateRule transforms a NetworkingV1NetworkPolicyRule into a generic rule once it receives the parameter
+// createRule transforms a NetworkingV1NetworkPolicyRule into a generic rule once it receives the parameter
 // to interpolate.
-func (r *NetworkingV1NetworkPolicyRule) CreateRule(networkpolicy *networkingV1.NetworkPolicy, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+func (r *NetworkingV1NetworkPolicyRule) createRule(networkpolicy *networkingV1.NetworkPolicy, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -462,10 +462,10 @@ type V1Beta1ExtensionsNetworkPolicyRule struct {
 	FixDescription func(*v1beta1Extensions.NetworkPolicy) string
 }
 
-// CreateRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
+// createRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
 // to interpolate.
-func (r *V1Beta1ExtensionsNetworkPolicyRule) CreateRule(networkpolicy *v1beta1Extensions.NetworkPolicy, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+func (r *V1Beta1ExtensionsNetworkPolicyRule) createRule(networkpolicy *v1beta1Extensions.NetworkPolicy, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -504,10 +504,10 @@ type RbacV1RoleRule struct {
 	FixDescription func(*rbacV1.Role) string
 }
 
-// CreateRule transforms a RbacV1RoleRule into a generic rule once it receives the parameter
+// createRule transforms a RbacV1RoleRule into a generic rule once it receives the parameter
 // to interpolate.
-func (r *RbacV1RoleRule) CreateRule(role *rbacV1.Role, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+func (r *RbacV1RoleRule) createRule(role *rbacV1.Role, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -546,10 +546,10 @@ type RbacV1Beta1RoleBindingRule struct {
 	FixDescription func(*rbacV1beta1.RoleBinding) string
 }
 
-// CreateRule transforms a RbacV1Beta1RoleBindingRule into a generic rule once it receives the parameter
+// createRule transforms a RbacV1Beta1RoleBindingRule into a generic rule once it receives the parameter
 // to interpolate.
-func (r *RbacV1Beta1RoleBindingRule) CreateRule(rolebinding *rbacV1beta1.RoleBinding, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+func (r *RbacV1Beta1RoleBindingRule) createRule(rolebinding *rbacV1beta1.RoleBinding, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -588,10 +588,10 @@ type V1ServiceAccountRule struct {
 	FixDescription func(*v1.ServiceAccount) string
 }
 
-// CreateRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
+// createRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
 // to interpolate.
-func (r *V1ServiceAccountRule) CreateRule(serviceaccount *v1.ServiceAccount, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+func (r *V1ServiceAccountRule) createRule(serviceaccount *v1.ServiceAccount, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -632,10 +632,10 @@ type V1ServiceRule struct {
 	FixDescription func(*v1.Service) string
 }
 
-// CreateRule transforms a V1ServiceRule into a generic rule once it receives the parameter
+// createRule transforms a V1ServiceRule into a generic rule once it receives the parameter
 // to interpolate.
-func (r *V1ServiceRule) CreateRule(service *v1.Service, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+func (r *V1ServiceRule) createRule(service *v1.Service, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -676,10 +676,10 @@ type GenericRule struct {
 	FixDescription func(*Resource) string
 }
 
-// CreateRule transforms a GenericRule into a generic rule once it receives the parameter
+// createRule transforms a GenericRule into a generic rule once it receives the parameter
 // to interpolate.
-func (r *GenericRule) CreateRule(resource *Resource, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+func (r *GenericRule) createRule(resource *Resource, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -720,14 +720,14 @@ type InterdependentRule struct {
 	FixDescription func([]*Resource) string
 }
 
-// CreateRule transforms a InterdependentRule into a generic rule once it receives the parameter
+// createRule transforms a InterdependentRule into a generic rule once it receives the parameter
 // to interpolate.
-func (r *InterdependentRule) CreateRule(resources []*YamlDerivedResource) *Rule {
+func (r *InterdependentRule) createRule(resources []*YamlDerivedResource) *rule {
 	var bareResources []*Resource
 	for _, r := range resources {
 		bareResources = append(bareResources, &r.Resource)
 	}
-	rule := &Rule{
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {

@@ -9,19 +9,19 @@ import "fmt"
 //edges:24:map[lint.RuleID]lint.RuleID{}
 //
 type ruleSorter struct {
-	rules map[RuleID]*Rule
+	rules map[RuleID]*rule
 	edges map[RuleID]map[RuleID]RuleID
 }
 
 // Retrieve the rule given its ID
 // May as well implement this since I have to make a map for other operations anyway
-func (r *ruleSorter) get(id RuleID) *Rule {
+func (r *ruleSorter) get(id RuleID) *rule {
 	return r.rules[id]
 }
 
 func (r *ruleSorter) clone() *ruleSorter {
 	edgesClone := make(map[RuleID]map[RuleID]RuleID)
-	rulesClone := make(map[RuleID]*Rule)
+	rulesClone := make(map[RuleID]*rule)
 
 	for id, rule := range r.rules {
 		rulesClone[id] = rule
@@ -37,9 +37,9 @@ func (r *ruleSorter) clone() *ruleSorter {
 
 // Create a new ruleSorter given a list of rules
 // Usual use case is to use the ruleSorter to access the rules in the correct order!
-func newRuleSorter(rules []*Rule) *ruleSorter {
+func newRuleSorter(rules []*rule) *ruleSorter {
 	e := make(map[RuleID]map[RuleID]RuleID)
-	r := make(map[RuleID]*Rule)
+	r := make(map[RuleID]*rule)
 	for _, rule := range rules {
 		r[rule.ID] = rule
 		e[rule.ID] = make(map[RuleID]RuleID)
@@ -50,9 +50,9 @@ func newRuleSorter(rules []*Rule) *ruleSorter {
 	return &ruleSorter{edges: e, rules: r}
 }
 
-func (r *ruleSorter) getDependentRules(masterId RuleID) []*Rule {
+func (r *ruleSorter) getDependentRules(masterId RuleID) []*rule {
 	ruleIDs := r.getDependents(masterId)
-	var rules []*Rule
+	var rules []*rule
 	for _, id := range ruleIDs {
 		rules = append(rules, r.rules[id])
 	}
@@ -78,7 +78,7 @@ func (r *ruleSorter) getDependents(masterId RuleID) []RuleID {
 // Use this when you want to retrieve AND get rid of all rules that are dependent on a particular rule.
 // Usually you want to use this when a rule fails, and you would like to avoid executing
 // the rules that depend on this rule's success.
-func (r *ruleSorter) popDependentRules(masterId RuleID) []*Rule {
+func (r *ruleSorter) popDependentRules(masterId RuleID) []*rule {
 	dependents := r.getDependentRules(masterId)
 	// now just delete them from the map.
 	for _, rule := range dependents {
@@ -113,7 +113,7 @@ func (r *ruleSorter) remove(id RuleID) {
 //2. Find all the rules which depend on this rule, and remove it from it's dependency list
 //3. remove the rule itself from the edge map
 //4. Return the rule
-func (r *ruleSorter) popNextAvailable() *Rule {
+func (r *ruleSorter) popNextAvailable() *rule {
 	var ruleId RuleID
 	cycle := true
 	for id, incoming := range r.edges {

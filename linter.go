@@ -205,12 +205,12 @@ func (l *Linter) ApplyFixes() ([]*Resource, []string) {
 	return l.resources, appliedFixDescriptions
 }
 
-//	CreateRules finds the registered interdependent rules and transforms them
+//	createInterdependentRules finds the registered interdependent rules and transforms them
 //	to generic rules by applying the ydrs parameter.
-func (l *Linter) createInterdependentRules(ydrs []*YamlDerivedResource) []*Rule {
-	var rules []*Rule
+func (l *Linter) createInterdependentRules(ydrs []*YamlDerivedResource) []*rule {
+	var rules []*rule
 	for _, interdependentRule := range l.interdependentRules {
-		rules = append(rules, interdependentRule.CreateRule(ydrs))
+		rules = append(rules, interdependentRule.createRule(ydrs))
 	}
 	return rules
 }
@@ -218,75 +218,75 @@ func (l *Linter) createInterdependentRules(ydrs []*YamlDerivedResource) []*Rule 
 // createRules finds the type-appropriate rules that are registered in the linter
 // and transforms them to generic rules by applying the resource parameter.
 // Then the list of rules are returned. I think I put it into a ruleSorter later on.
-func (l *Linter) createRules(ydr *YamlDerivedResource) ([]*Rule, error) {
-	var rules []*Rule
+func (l *Linter) createRules(ydr *YamlDerivedResource) ([]*rule, error) {
+	var rules []*rule
 	resource := &ydr.Resource
 
 	// generic rules always need to be added
 	for _, genericRule := range l.genericRules {
-		rules = append(rules, genericRule.CreateRule(resource, ydr))
+		rules = append(rules, genericRule.createRule(resource, ydr))
 	}
 	// append type-specific rules
 	switch concrete := resource.Object.(type) {
 	case *appsv1.Deployment:
 		for _, deploymentRule := range l.appsV1DeploymentRules {
-			rules = append(rules, deploymentRule.CreateRule(concrete, ydr))
+			rules = append(rules, deploymentRule.createRule(concrete, ydr))
 		}
 		for _, podSpecRule := range l.v1PodSpecRules {
-			rules = append(rules, podSpecRule.CreateRule(&concrete.Spec.Template.Spec, ydr))
+			rules = append(rules, podSpecRule.createRule(&concrete.Spec.Template.Spec, ydr))
 		}
 		for _, v1ContainerRule := range l.v1ContainerRules {
 			for i, _ := range concrete.Spec.Template.Spec.Containers {
-				rules = append(rules, v1ContainerRule.CreateRule(&concrete.Spec.Template.Spec.Containers[i], ydr))
+				rules = append(rules, v1ContainerRule.createRule(&concrete.Spec.Template.Spec.Containers[i], ydr))
 			}
 		}
 	case *v1.Namespace:
 		for _, v1NamespaceRule := range l.v1NamespaceRules {
-			rules = append(rules, v1NamespaceRule.CreateRule(concrete, ydr))
+			rules = append(rules, v1NamespaceRule.createRule(concrete, ydr))
 		}
 	case *v1.PersistentVolumeClaim:
 		for _, v1PersistentVolumeClaimRule := range l.v1PersistentVolumeClaimRules {
-			rules = append(rules, v1PersistentVolumeClaimRule.CreateRule(concrete, ydr))
+			rules = append(rules, v1PersistentVolumeClaimRule.createRule(concrete, ydr))
 		}
 	case *v1beta1Extensions.Deployment:
 		for _, v1Beta1ExtensionsDeploymentRule := range l.v1Beta1ExtensionsDeploymentRules {
-			rules = append(rules, v1Beta1ExtensionsDeploymentRule.CreateRule(concrete, ydr))
+			rules = append(rules, v1Beta1ExtensionsDeploymentRule.createRule(concrete, ydr))
 		}
 	case *batchV1.Job:
 		for _, batchV1JobRule := range l.batchV1JobRules {
-			rules = append(rules, batchV1JobRule.CreateRule(concrete, ydr))
+			rules = append(rules, batchV1JobRule.createRule(concrete, ydr))
 		}
 	case *batchV1beta1.CronJob:
 		for _, batchV1Beta1CronJobRule := range l.batchV1Beta1CronJobRules {
-			rules = append(rules, batchV1Beta1CronJobRule.CreateRule(concrete, ydr))
+			rules = append(rules, batchV1Beta1CronJobRule.createRule(concrete, ydr))
 		}
 	case *v1beta1Extensions.Ingress:
 		for _, v1Beta1ExtensionsIngressRule := range l.v1Beta1ExtensionsIngressRules {
-			rules = append(rules, v1Beta1ExtensionsIngressRule.CreateRule(concrete, ydr))
+			rules = append(rules, v1Beta1ExtensionsIngressRule.createRule(concrete, ydr))
 		}
 	case *networkingV1.NetworkPolicy:
 		for _, networkingV1NetworkPolicyRule := range l.networkingV1NetworkPolicyRules {
-			rules = append(rules, networkingV1NetworkPolicyRule.CreateRule(concrete, ydr))
+			rules = append(rules, networkingV1NetworkPolicyRule.createRule(concrete, ydr))
 		}
 	case *v1beta1Extensions.NetworkPolicy:
 		for _, v1Beta1ExtensionsNetworkPolicyRule := range l.v1Beta1ExtensionsNetworkPolicyRules {
-			rules = append(rules, v1Beta1ExtensionsNetworkPolicyRule.CreateRule(concrete, ydr))
+			rules = append(rules, v1Beta1ExtensionsNetworkPolicyRule.createRule(concrete, ydr))
 		}
 	case *rbacV1.Role:
 		for _, rbacV1RoleRule := range l.rbacV1RoleRules {
-			rules = append(rules, rbacV1RoleRule.CreateRule(concrete, ydr))
+			rules = append(rules, rbacV1RoleRule.createRule(concrete, ydr))
 		}
 	case *rbacV1beta1.RoleBinding:
 		for _, rbacV1Beta1RoleBindingRule := range l.rbacV1Beta1RoleBindingRules {
-			rules = append(rules, rbacV1Beta1RoleBindingRule.CreateRule(concrete, ydr))
+			rules = append(rules, rbacV1Beta1RoleBindingRule.createRule(concrete, ydr))
 		}
 	case *v1.ServiceAccount:
 		for _, v1ServiceAccountRule := range l.v1ServiceAccountRules {
-			rules = append(rules, v1ServiceAccountRule.CreateRule(concrete, ydr))
+			rules = append(rules, v1ServiceAccountRule.createRule(concrete, ydr))
 		}
 	case *v1.Service:
 		for _, v1ServiceRule := range l.v1ServiceRules {
-			rules = append(rules, v1ServiceRule.CreateRule(concrete, ydr))
+			rules = append(rules, v1ServiceRule.createRule(concrete, ydr))
 		}
 
 	default:
