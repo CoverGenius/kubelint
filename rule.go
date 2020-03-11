@@ -712,33 +712,50 @@ func (r *GenericRule) createRule(resource *Resource, ydr *YamlDerivedResource) *
 //	You will need to do your own typecasting or rely on the methods available to you in metav1.Object and meta.Type to access the objects' fields.
 type InterdependentRule struct {
 	ID             RuleID
-	Prereqs        []RuleID
-	Condition      func([]*Resource) bool
+	Condition      func([]*Resource) (bool, []*Resource) // if it returns false, it will also return a list of the offending resources. This is passed to the result.Resources field later.
 	Message        string
 	Level          log.Level
 	Fix            func([]*Resource) bool
 	FixDescription func([]*Resource) string
 }
 
+type interdependentRule struct {
+	ID             RuleID
+	Condition      func() bool // if it returns false, it will also return a list of the offending resources. This is passed to the result.Resources field later.
+	Message        string
+	Level          log.Level
+	Fix            func() bool
+	FixDescription func() string
+	Resources      []*YamlDerivedResource
+}
+
 // createRule transforms a InterdependentRule into a generic rule once it receives the parameter
 // to interpolate.
-func (r *InterdependentRule) createRule(resources []*YamlDerivedResource) *rule {
+func (r *InterdependentRule) createRule(resources []*YamlDerivedResource) *interdependentRule {
 	var bareResources []*Resource
 	for _, r := range resources {
 		bareResources = append(bareResources, &r.Resource)
 	}
-	rule := &rule{
-		ID:      r.ID,
-		Prereqs: r.Prereqs,
-		Condition: func() bool {
-			if r.Condition == nil {
-				return true
+	// we need to silently execute the condition so we can find out which resources are relevant :(
+	// This means prerequisites are disallowed. sorry :(
+	success, offendingResources := r.Condition(bareResources)
+	// collect information about offending resources
+	var offendingYamls []*YamlDerivedResource
+	for _, offendingResource := range offendingResources {
+		for _, yaml := range resources {
+			if &yaml.Resource == offendingResource {
+				offendingYamls = append(offendingYamls, yaml)
 			}
-			return r.Condition(bareResources)
+		}
+	}
+	rule := &interdependentRule{
+		ID: r.ID,
+		Condition: func() bool {
+			return success
 		},
 		Message:   r.Message,
 		Level:     r.Level,
-		Resources: resources,
+		Resources: offendingYamls,
 		Fix: func() bool {
 			if r.Fix == nil {
 				return false

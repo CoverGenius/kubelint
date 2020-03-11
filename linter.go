@@ -38,7 +38,8 @@ type Linter struct {
 	genericRules                        []*GenericRule                        // a register for all user-defined Generic rules (applied to every object)
 	interdependentRules                 []*InterdependentRule                 // a register for all user-defined Interdependent rules (applied to the system as a whole)
 	fixes                               []*ruleSorter                         // fixes that should be applied to the resources in order to mitigate some errors on a future pass
-	resources                           []*Resource                           // All the resources that have been read in by this linter
+	interdependentFixes                 []*interdependentRule
+	resources                           []*Resource // All the resources that have been read in by this linter
 }
 
 //	NewDefaultLinter returns a linter with absolutely no rules.
@@ -123,27 +124,14 @@ func (l *Linter) LintFile(file *os.File) ([]*Result, []error) {
 func (l *Linter) lintResources(resources []*YamlDerivedResource) []*Result {
 	var results []*Result
 	rules := l.createInterdependentRules(resources)
-	ruleSorter := newRuleSorter(rules)
-	fixSorter := ruleSorter.clone()
-	l.fixes = append(l.fixes, fixSorter)
-	for !ruleSorter.isEmpty() {
-		rule := ruleSorter.popNextAvailable()
+	for _, rule := range rules {
 		if !rule.Condition() {
 			results = append(results, &Result{
-				Resources: resources,
+				Resources: rule.Resources,
 				Message:   rule.Message,
 				Level:     rule.Level,
 			})
-			dependentRules := ruleSorter.popDependentRules(rule.ID)
-			for _, dependentRule := range dependentRules {
-				results = append(results, &Result{
-					Resources: resources,
-					Message:   dependentRule.Message,
-					Level:     dependentRule.Level,
-				})
-			}
-		} else {
-			fixSorter.remove(rule.ID)
+			l.interdependentFixes = append(l.interdependentFixes, rule)
 		}
 	}
 	return results
@@ -202,13 +190,20 @@ func (l *Linter) ApplyFixes() ([]*Resource, []string) {
 			}
 		}
 	}
+	for _, rule := range l.interdependentFixes {
+		fixed := rule.Fix()
+		if fixed {
+			appliedFixDescriptions = append(appliedFixDescriptions, rule.FixDescription())
+		}
+	}
+
 	return l.resources, appliedFixDescriptions
 }
 
 //	createInterdependentRules finds the registered interdependent rules and transforms them
 //	to generic rules by applying the ydrs parameter.
-func (l *Linter) createInterdependentRules(ydrs []*YamlDerivedResource) []*rule {
-	var rules []*rule
+func (l *Linter) createInterdependentRules(ydrs []*YamlDerivedResource) []*interdependentRule {
+	var rules []*interdependentRule
 	for _, interdependentRule := range l.interdependentRules {
 		rules = append(rules, interdependentRule.createRule(ydrs))
 	}
