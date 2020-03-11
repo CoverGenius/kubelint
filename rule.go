@@ -26,16 +26,18 @@ type rule struct {
 	FixDescription func() string
 }
 
-//	This represents a generic rule that can be applied to a deployment object.
-// 	All other AppsV1DeploymentRule structs are analogous.
+// AppsV1DeploymentRule represents a semantic enforcement. For example, you would like all appsv1.Deployments to
+// have 2 replicas. Your condition should check the field deployment.Spec.Replicas is non-nil and its value is 2.
+// This represents a generic rule that can be applied to a deployment object.
+// All other AppsV1DeploymentRule structs are analogous.
 type AppsV1DeploymentRule struct {
-	ID             RuleID
-	Prereqs        []RuleID
-	Condition      func(*appsv1.Deployment) bool
-	Message        string
-	Level          log.Level
-	Fix            func(*appsv1.Deployment) bool
-	FixDescription func(*appsv1.Deployment) string
+	ID             RuleID                          // an arbitrary unique string identifier for this rule
+	Prereqs        []RuleID                        // rules that should be executed before this rule (optional)
+	Condition      func(*appsv1.Deployment) bool   // The Condition to execute on the deployment object. If this function returns true, it means that the deployment resource satisfies this rule.
+	Message        string                          // The Message that should be reported to the user if the condition fails
+	Level          log.Level                       // The level of severity implied if this rule fails
+	Fix            func(*appsv1.Deployment) bool   // A mutating function that applies a fix. If Condition was called after this function was called, Condition should return true.
+	FixDescription func(*appsv1.Deployment) string // A function returning the string that describes the fix that was applied within the Fix function
 }
 
 //	Once we get a reference to an actual resource, we can interpolate this into the

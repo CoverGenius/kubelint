@@ -6,6 +6,13 @@ To initialise the linter to enforce this, you just need to set up a linter, add 
 can even implement your own fix. It's up to you what you do with the in-memory representation of your deployment once it is fixed,
 but kubelint also provides some utility functions to write kubernetes resources to file or as a bytes representation.
 
+To summarise, the main objectives you can fulfill with kubelint are:
+1. Linting YAML kubernetes resource for correctness
+2. Reporting resource definition errors
+3. Automatically applying fixes to resource definitions
+4. Writing kubernetes resources to a file
+5. Obtaining the bytes representation of a fixed resource definition
+
 This is how to set up the linter to check that every deployment has runAsNonRoot: true.
 
 	l := kubelint.NewDefaultLinter()
@@ -19,7 +26,7 @@ This is how to set up the linter to check that every deployment has runAsNonRoot
 		ID: "APPSV1_DEPLOYMENT_RUN_AS_NON_ROOT",
 		Level: logrus.ErrorLevel,
 	})
-Then once you have a linter with more than one rule, all it takes to have the linter perform checks is to provide a reference
+Then once you have a linter set up  with some rules, all it takes to have the linter perform checks is to provide a reference
 to the filepath or a bytes slice.
 	results, errors := l.LintBytes([]byte(`kind: Deployment
 	version: apps/v1
@@ -27,7 +34,7 @@ to the filepath or a bytes slice.
 	  name: hello-world`))
 	// If the resources weren't interpretable as YAML kubernetes resources, the errors slice might not be empty
 	for _, err := range errors {
-		log.Error(err)
+		logrus.Error(err)
 	}
 	// Log the results of linting!
 	logger := logrus.New()
@@ -74,5 +81,10 @@ the original files, but you can still simulate an in-place fixer if you overwrit
 	resources, fixDescriptions := l.ApplyFixes()
 	bytes, errs := kubelint.Write(resources...)
 	fmt.Printf("%s\n", string(bytes))
+
+Also notice that you can report the fixes that have been applied.
+	for _, description := range fixDescriptions {
+		fmt.Printf("X %s\n", description)
+	}
 */
 package kubelint
