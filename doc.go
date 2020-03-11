@@ -86,5 +86,13 @@ Also notice that you can report the fixes that have been applied.
 	for _, description := range fixDescriptions {
 		fmt.Printf("X %s\n", description)
 	}
+If anything goes wrong with your linter implementation, you can attempt to debug by creating a logrus.logger instance
+and passing it to the constructor of the linter object.
+
+	logger := logrus.New()
+	logger.SetOutput(os.Stdout)
+	logger.SetLevel(logrus.DebugLevel)
+	linter := kubelint.NewLinter(logger)
+	...
 */
 package kubelint
