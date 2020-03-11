@@ -7,7 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func main() {
+func lintBasic() {
 	linter := kubelint.NewDefaultLinter()
 	// linter configuration
 	linter.AddV1PodSpecRule(kubelint.V1_PODSPEC_CORRECT_USER_GROUP_ID, kubelint.V1_PODSPEC_NON_NIL_SECURITY_CONTEXT)
@@ -19,7 +19,6 @@ func main() {
 		Message: "There are only a few resources in this unit",
 		Level:   log.InfoLevel,
 	})
-	linter.Add
 	results, errs := linter.Lint("example_yamls/deployment_invalid_user_group_ids.yaml")
 	for _, err := range errs {
 		log.Error(err)

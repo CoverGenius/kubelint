@@ -43,6 +43,9 @@ to the filepath or a bytes slice.
 		logger.Log(result.Level, result.Message)
 	}
 
+The result might look like:
+	ERRO[0000] All deployments should have runAsNonRoot set to true  filepath=example_yamls/deployment_non_root_false.yaml line number=1 resource name=hello-world-web
+
 If you want the error messages to be more informative, you can pull out information from the Resources field. For most results,
 there will only be one resource in this slice, but for rules referencing many resources, it could be multiple. You would need to
 define those yourself.
