@@ -16,8 +16,8 @@ import (
 )
 
 // Linter: This Linter represents something you can pass in resources to
-//	and get results out of that you can eventually log.
-//	Also some utility methods for input handling.
+// and get results out of that you can eventually log.
+// Also some utility methods for input handling.
 type Linter struct {
 	logger                              *log.Logger
 	appsV1DeploymentRules               []*AppsV1DeploymentRule               // a register for all user-defined appsV1Deployment rules
@@ -46,6 +46,8 @@ func NewDefaultLinter() *Linter {
 	return &Linter{}
 }
 
+// NewLinter sets the logger passed in and makes it possible to turn on debug statements to trace the execution of the linter, in case there are any problems on the client side. I recommend setting a logrus logger to DebugLevel to see
+// the execution trace.
 func NewLinter(l *log.Logger) *Linter {
 	return &Linter{logger: l}
 }
