@@ -1,5 +1,7 @@
 package kubelint
 
+import "fmt"
+
 /* This object is used to store all the rules belonging to a resource group and looks like:
 
 &rulesorter.RuleSorter{
@@ -137,6 +139,12 @@ func (r *RuleSorter) PopNextAvailable() *Rule {
 	// If we don't have any empty edges list, that means
 	// we have a cycle somewhere
 	if cycle {
+		for id, edges := range r.edges {
+			fmt.Printf("%s:\n", id)
+			for rule, _ := range edges {
+				fmt.Printf("\t%s\n", rule)
+			}
+		}
 		panic("Either there's a cycle in your dependencies OR you've forgotten to include a prerequisite rule. Please be more careful")
 	}
 	for _, id := range r.getDependents(ruleId) {

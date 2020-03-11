@@ -15,11 +15,9 @@ import (
 	"os"
 )
 
-/**
-* Linter: This Linter represents something you can pass in resources to
-*	and get results out of that you can eventually log.
-*	Also some utility methods for input handling.
-**/
+// Linter: This Linter represents something you can pass in resources to
+//	and get results out of that you can eventually log.
+//	Also some utility methods for input handling.
 type Linter struct {
 	logger                              *log.Logger
 	appsV1DeploymentRules               []*AppsV1DeploymentRule               // a register for all user-defined appsV1Deployment rules
@@ -43,10 +41,7 @@ type Linter struct {
 	resources                           []*Resource                           // All the resources that have been read in by this linter
 }
 
-/**
-*	NewDefaultLinter returns a linter with absolutely no rules.
-*
-**/
+//	NewDefaultLinter returns a linter with absolutely no rules.
 func NewDefaultLinter() *Linter {
 	return &Linter{}
 }
@@ -55,10 +50,8 @@ func NewLinter(l *log.Logger) *Linter {
 	return &Linter{logger: l}
 }
 
-/**
-* Lint opens and lints the files and produces results that
-* can be logged later on
-**/
+// Lint opens and lints the files and produces results that
+// can be logged later on
 func (l *Linter) Lint(filepaths ...string) ([]*Result, []error) {
 	var errors []error
 	resources, errs := Read(filepaths...)
@@ -80,10 +73,8 @@ func (l *Linter) Lint(filepaths ...string) ([]*Result, []error) {
 	return results, errors
 }
 
-/**
-*	LintBytes takes a slice of bytes to lint and a filepath and
-*	returns a list of Results and errors to report or log later on
-**/
+//	LintBytes takes a slice of bytes to lint and a filepath and
+//	returns a list of Results and errors to report or log later on
 func (l *Linter) LintBytes(data []byte, filepath string) ([]*Result, []error) {
 	resources, errors := ReadBytes(data, filepath)
 	for _, resource := range resources {
@@ -102,10 +93,8 @@ func (l *Linter) LintBytes(data []byte, filepath string) ([]*Result, []error) {
 	return results, errors
 }
 
-/**
-*	LintFile takes a file pointer and returns a list of Reults and Errors
-*	to be logged or reported later on
-**/
+//	LintFile takes a file pointer and returns a list of Reults and Errors
+//	to be logged or reported later on
 func (l *Linter) LintFile(file *os.File) ([]*Result, []error) {
 	resources, errors := ReadFile(file)
 	for _, resource := range resources {
@@ -124,11 +113,9 @@ func (l *Linter) LintFile(file *os.File) ([]*Result, []error) {
 	return results, errors
 }
 
-/**
-*	LintResources takes a list of Yaml Derived Resources, applying interdependent rules ONLY
-*   and returns a list of Results
-*	to be logged or reported
-**/
+//	LintResources takes a list of Yaml Derived Resources, applying interdependent rules ONLY
+//   and returns a list of Results
+//	to be logged or reported
 func (l *Linter) LintResources(resources []*YamlDerivedResource) []*Result {
 	var results []*Result
 	rules := l.createInterdependentRules(resources)
@@ -158,14 +145,16 @@ func (l *Linter) LintResources(resources []*YamlDerivedResource) []*Result {
 	return results
 }
 
-/**
-* LintResource takes a yaml derived resource and returns a list of results and errors
-* to be logged or reported
-**/
+// LintResource takes a yaml derived resource and returns a list of results and errors
+// to be logged or reported
 func (l *Linter) LintResource(resource *YamlDerivedResource) ([]*Result, error) {
 	var results []*Result
 	rules, err := l.createRules(resource)
 	l.logger.Debugln(len(rules), "rules created for", resource.Filepath)
+	// log rules and their dependent rules
+	for _, rule := range rules {
+		l.logger.Debugf("Rule ID: %s\n\tPrereqs: %#v\n", rule.ID, rule.Prereqs)
+	}
 	ruleSorter := NewRuleSorter(rules)
 	fixSorter := ruleSorter.Clone()
 	l.fixes = append(l.fixes, fixSorter)
@@ -194,10 +183,8 @@ func (l *Linter) LintResource(resource *YamlDerivedResource) ([]*Result, error) 
 	return results, err
 }
 
-/**
-*	ApplyFixes applies all fixes that were registered as necessary during the lint phase.
-*	The references to all the objects are kept in the Resources array so it will be reflected there.
-**/
+//	ApplyFixes applies all fixes that were registered as necessary during the lint phase.
+//	The references to all the objects are kept in the Resources array so it will be reflected there.
 func (l *Linter) ApplyFixes() ([]*Resource, []string) {
 	var appliedFixDescriptions []string
 	for _, sorter := range l.fixes {
@@ -214,10 +201,8 @@ func (l *Linter) ApplyFixes() ([]*Resource, []string) {
 	return l.resources, appliedFixDescriptions
 }
 
-/**
-*	CreateRules finds the registered interdependent rules and transforms them
-*	to generic rules by applying the ydrs parameter.
-**/
+//	CreateRules finds the registered interdependent rules and transforms them
+//	to generic rules by applying the ydrs parameter.
 func (l *Linter) createInterdependentRules(ydrs []*YamlDerivedResource) []*Rule {
 	var rules []*Rule
 	for _, interdependentRule := range l.interdependentRules {
@@ -226,11 +211,9 @@ func (l *Linter) createInterdependentRules(ydrs []*YamlDerivedResource) []*Rule 
 	return rules
 }
 
-/**
-* createRules finds the type-appropriate rules that are registered in the linter
-* and transforms them to generic rules by applying the resource parameter.
-* Then the list of rules are returned. I think I put it into a ruleSorter later on.
-**/
+// createRules finds the type-appropriate rules that are registered in the linter
+// and transforms them to generic rules by applying the resource parameter.
+// Then the list of rules are returned. I think I put it into a ruleSorter later on.
 func (l *Linter) createRules(ydr *YamlDerivedResource) ([]*Rule, error) {
 	var rules []*Rule
 	resource := &ydr.Resource
@@ -308,138 +291,104 @@ func (l *Linter) createRules(ydr *YamlDerivedResource) ([]*Rule, error) {
 	return rules, nil
 }
 
-/**
-*	AddAppsV1DeploymentRule adds a custom rule (or many) so that anything sent through the linter of the correct type
-*	has this rule applied to it.
-**/
+//	AddAppsV1DeploymentRule adds a custom rule (or many) so that anything sent through the linter of the correct type
+//	has this rule applied to it.
 func (l *Linter) AddAppsV1DeploymentRule(rules ...*AppsV1DeploymentRule) {
 	l.appsV1DeploymentRules = append(l.appsV1DeploymentRules, rules...)
 }
 
-/**
-*	AddV1NamespaceRule adds a custom rule (or many) so that anything sent through the linter of the correct type
-*	has this rule applied to it.
-**/
+//	AddV1NamespaceRule adds a custom rule (or many) so that anything sent through the linter of the correct type
+//	has this rule applied to it.
 func (l *Linter) AddV1NamespaceRule(rules ...*V1NamespaceRule) {
 	l.v1NamespaceRules = append(l.v1NamespaceRules, rules...)
 }
 
-/**
-*	AddV1PodSpecRule adds a custom rule (or many) so that anything sent through the linter of the correct type
-*	has this rule applied to it.
-**/
+//	AddV1PodSpecRule adds a custom rule (or many) so that anything sent through the linter of the correct type
+//	has this rule applied to it.
 func (l *Linter) AddV1PodSpecRule(rules ...*V1PodSpecRule) {
 	l.v1PodSpecRules = append(l.v1PodSpecRules, rules...)
 }
 
-/**
-*	AddV1ContainerRule adds a custom rule (or many) so that anything sent through the linter of the correct type
-*	has this rule applied to it.
-**/
+//	AddV1ContainerRule adds a custom rule (or many) so that anything sent through the linter of the correct type
+//	has this rule applied to it.
 func (l *Linter) AddV1ContainerRule(rules ...*V1ContainerRule) {
 	l.v1ContainerRules = append(l.v1ContainerRules, rules...)
 }
 
-/**
-*	AddV1PersistentVolumeClaimRule adds a custom rule (or many) so that anything sent through the linter of the correct type
-*	has this rule applied to it.
-**/
+//	AddV1PersistentVolumeClaimRule adds a custom rule (or many) so that anything sent through the linter of the correct type
+//	has this rule applied to it.
 func (l *Linter) AddV1PersistentVolumeClaimRule(rules ...*V1PersistentVolumeClaimRule) {
 	l.v1PersistentVolumeClaimRules = append(l.v1PersistentVolumeClaimRules, rules...)
 }
 
-/**
-*	AddV1Beta1ExtensionsDeploymentRule adds a custom rule (or many) so that anything sent through the linter of the correct type
-*	has this rule applied to it.
-**/
+//	AddV1Beta1ExtensionsDeploymentRule adds a custom rule (or many) so that anything sent through the linter of the correct type
+//	has this rule applied to it.
 func (l *Linter) AddV1Beta1ExtensionsDeploymentRule(rules ...*V1Beta1ExtensionsDeploymentRule) {
 	l.v1Beta1ExtensionsDeploymentRules = append(l.v1Beta1ExtensionsDeploymentRules, rules...)
 }
 
-/**
-*	AddBatchV1JobRule adds a custom rule (or many) so that anything sent through the linter of the correct type
-*	has this rule applied to it.
-**/
+//	AddBatchV1JobRule adds a custom rule (or many) so that anything sent through the linter of the correct type
+//	has this rule applied to it.
 func (l *Linter) AddBatchV1JobRule(rules ...*BatchV1JobRule) {
 	l.batchV1JobRules = append(l.batchV1JobRules, rules...)
 }
 
-/**
-*	AddBatchV1Beta1CronJobRule adds a custom rule (or many) so that anything sent through the linter of the correct type
-*	has this rule applied to it.
-**/
+//	AddBatchV1Beta1CronJobRule adds a custom rule (or many) so that anything sent through the linter of the correct type
+//	has this rule applied to it.
 func (l *Linter) AddBatchV1Beta1CronJobRule(rules ...*BatchV1Beta1CronJobRule) {
 	l.batchV1Beta1CronJobRules = append(l.batchV1Beta1CronJobRules, rules...)
 }
 
-/**
-*	AddV1Beta1ExtensionsIngressRule adds a custom rule (or many) so that anything sent through the linter of the correct type
-*	has this rule applied to it.
-**/
+//	AddV1Beta1ExtensionsIngressRule adds a custom rule (or many) so that anything sent through the linter of the correct type
+//	has this rule applied to it.
 func (l *Linter) AddV1Beta1ExtensionsIngressRule(rules ...*V1Beta1ExtensionsIngressRule) {
 	l.v1Beta1ExtensionsIngressRules = append(l.v1Beta1ExtensionsIngressRules, rules...)
 }
 
-/**
-*	AddNetworkingV1NetworkPolicyRule adds a custom rule (or many) so that anything sent through the linter of the correct type
-*	has this rule applied to it.
-**/
+//	AddNetworkingV1NetworkPolicyRule adds a custom rule (or many) so that anything sent through the linter of the correct type
+//	has this rule applied to it.
 func (l *Linter) AddNetworkingV1NetworkPolicyRule(rules ...*NetworkingV1NetworkPolicyRule) {
 	l.networkingV1NetworkPolicyRules = append(l.networkingV1NetworkPolicyRules, rules...)
 }
 
-/**
-*	AddV1Beta1ExtensionsNetworkPolicyRule adds a custom rule (or many) so that anything sent through the linter of the correct type
-*	has this rule applied to it.
-**/
+//	AddV1Beta1ExtensionsNetworkPolicyRule adds a custom rule (or many) so that anything sent through the linter of the correct type
+//	has this rule applied to it.
 func (l *Linter) AddV1Beta1ExtensionsNetworkPolicyRule(rules ...*V1Beta1ExtensionsNetworkPolicyRule) {
 	l.v1Beta1ExtensionsNetworkPolicyRules = append(l.v1Beta1ExtensionsNetworkPolicyRules, rules...)
 }
 
-/**
-*	AddRbacV1RoleRule adds a custom rule (or many) so that anything sent through the linter of the correct type
-*	has this rule applied to it.
-**/
+//	AddRbacV1RoleRule adds a custom rule (or many) so that anything sent through the linter of the correct type
+//	has this rule applied to it.
 func (l *Linter) AddRbacV1RoleRule(rules ...*RbacV1RoleRule) {
 	l.rbacV1RoleRules = append(l.rbacV1RoleRules, rules...)
 }
 
-/**
-*	AddRbacV1Beta1RoleBindingRule adds a custom rule (or many) so that anything sent through the linter of the correct type
-*	has this rule applied to it.
-**/
+//	AddRbacV1Beta1RoleBindingRule adds a custom rule (or many) so that anything sent through the linter of the correct type
+//	has this rule applied to it.
 func (l *Linter) AddRbacV1Beta1RoleBindingRule(rules ...*RbacV1Beta1RoleBindingRule) {
 	l.rbacV1Beta1RoleBindingRules = append(l.rbacV1Beta1RoleBindingRules, rules...)
 }
 
-/**
-*	AddV1ServiceAccountRule adds a custom rule (or many) so that anything sent through the linter of the correct type
-*	has this rule applied to it.
-**/
+//	AddV1ServiceAccountRule adds a custom rule (or many) so that anything sent through the linter of the correct type
+//	has this rule applied to it.
 func (l *Linter) AddV1ServiceAccountRule(rules ...*V1ServiceAccountRule) {
 	l.v1ServiceAccountRules = append(l.v1ServiceAccountRules, rules...)
 }
 
-/**
-*	AddV1ServiceRule adds a custom rule (or many) so that anything sent through the linter of the correct type
-*	has this rule applied to it.
-**/
+//	AddV1ServiceRule adds a custom rule (or many) so that anything sent through the linter of the correct type
+//	has this rule applied to it.
 func (l *Linter) AddV1ServiceRule(rules ...*V1ServiceRule) {
 	l.v1ServiceRules = append(l.v1ServiceRules, rules...)
 }
 
-/**
-*	AddGenericRule adds a custom rule (or many) so that anything sent through the linter
-*	has this rule applied to it.
-**/
+//	AddGenericRule adds a custom rule (or many) so that anything sent through the linter
+//	has this rule applied to it.
 func (l *Linter) AddGenericRule(rules ...*GenericRule) {
 	l.genericRules = append(l.genericRules, rules...)
 }
 
-/**
-*	AddInterdependentRule adds a custom rule (or many) so that anything sent through the linter
-*	has this rule applied to it.
-**/
+//	AddInterdependentRule adds a custom rule (or many) so that anything sent through the linter
+//	has this rule applied to it.
 func (l *Linter) AddInterdependentRule(rules ...*InterdependentRule) {
 	l.interdependentRules = append(l.interdependentRules, rules...)
 }

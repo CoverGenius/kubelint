@@ -112,7 +112,7 @@ var (
 	// An AppsV1Deploument should have liveness and readiness endpoints that aren't the same
 	APPSV1_DEPLOYMENT_LIVENESS_READINESS_NONMATCHING = &AppsV1DeploymentRule{
 		ID:      "APPSV1_DEPLOYMENT_LIVENESS_READINESS_NONMATCHING",
-		Prereqs: []RuleID{"V1_PODSPEC_NON_ZERO_CONTAINERS", "V1_DEPLOYMENT_CONTAINER_EXISTS_READINESS", "V1_DEPLOYMENT_CONTAINER_EXISTS_LIVENESS"},
+		Prereqs: []RuleID{"V1_PODSPEC_NON_ZERO_CONTAINERS", "APPSV1_DEPLOYMENT_CONTAINER_EXISTS_READINESS", "APPSV1_DEPLOYMENT_CONTAINER_EXISTS_LIVENESS"},
 		Condition: func(deployment *appsv1.Deployment) bool {
 			container := deployment.Spec.Template.Spec.Containers[0]
 			return container.LivenessProbe.Handler.HTTPGet.Path != container.ReadinessProbe.Handler.HTTPGet.Path
@@ -211,7 +211,7 @@ var (
 			return true
 		},
 		FixDescription: func(container *v1.Container) string {
-			return fmt.Sprintf("Set container %'s security context to the empty map", container.Name)
+			return fmt.Sprintf("Set container %s's security context to the empty map", container.Name)
 		},
 	}
 	// A V1Container should not allow privilege escalation
