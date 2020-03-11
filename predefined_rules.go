@@ -30,7 +30,7 @@ import (
 * Predefined rules relating to resources of type v1.Container
 * - A V1Container should have a non-null security context * V1_CONTAINER_EXISTS_SECURITY_CONTEXT
 * - A V1Container should not allow privilege escalation * V1_CONTAINER_ALLOW_PRIVILEGE_ESCALATION_FALSE
-* - A V1Container's image should come from a set of allowed images defined in IsImageAllowed * V1_CONTAINER_VALID_IMAGE
+* - A V1Container's image should come from a set of allowed images defined in isImageAllowed * V1_CONTAINER_VALID_IMAGE
 * - A V1Container should have privileged set to false * V1_CONTAINER_PRIVILEGED_FALSE
 * - A V1Container should specify Resource Limits and Requests * V1_CONTAINER_EXISTS_RESOURCE_LIMITS_AND_REQUESTS
 * - A V1Container should make CPU requests that are less than or equal to 100% * V1_CONTAINER_REQUESTS_CPU_REASONABLE
@@ -233,11 +233,11 @@ var (
 			return fmt.Sprintf("Set AllowPrivilegeEscalation to false on Container %s", container.Name)
 		},
 	}
-	// A V1Container's image should come from a set of allowed images defined in IsImageAllowed
+	// A V1Container's image should come from a set of allowed images defined in isImageAllowed
 	V1_CONTAINER_VALID_IMAGE = &V1ContainerRule{
 		ID: "V1_CONTAINER_VALID_IMAGE",
 		Condition: func(container *v1.Container) bool {
-			return IsImageAllowed(container.Image)
+			return isImageAllowed(container.Image)
 		},
 		Message: "The container's image was not from the set of allowed images",
 		Level:   log.ErrorLevel,
@@ -378,7 +378,7 @@ var (
 	}
 )
 
-func IsImageAllowed(image string) bool {
+func isImageAllowed(image string) bool {
 	ALLOWED_DOCKER_REGISTRIES := []string{"277433404353.dkr.ecr.eu-central-1.amazonaws.com"}
 	for _, r := range ALLOWED_DOCKER_REGISTRIES {
 		if strings.HasPrefix(image, r) {
