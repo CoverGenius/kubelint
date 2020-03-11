@@ -60,10 +60,8 @@ func TestFullyFledgedLinter(t *testing.T) {
 		kubelint.V1_SERVICE_WITHIN_NAMESPACE,
 		kubelint.V1_SERVICE_NAME_VALID_DNS,
 	)
-	filepaths := []string{
-		"../examples/example_yamls/deployment_messed_up.yaml",
-		"../examples/example_yamls/deployment_invalid_user_group_ids.yaml",
-	}
+	filepaths := []string{"../examples/example_yamls/gc/deployment_invalid_user_group_ids.yaml", "../examples/example_yamls/deployment_messed_up.yaml", "../examples/example_yamls/deployment_missing_security_context_privilege.yaml", "../examples/example_yamls/deployment_wrong_privilege_escalation.yaml", "../examples/example_yamls/invalid_job.yaml", "../examples/example_yamls/partially_wrong_unit_directory/Deployment.yaml", "../examples/example_yamls/partially_wrong_unit_directory/Namespace.yaml", "../examples/example_yamls/partially_wrong_unit_directory/NetworkPolicy.yaml", "../examples/example_yamls/partially_wrong_unit_directory/NetworkPolicy1.yaml", "../examples/example_yamls/partially_wrong_unit_directory/Role.yaml", "../examples/example_yamls/partially_wrong_unit_directory/RoleBinding.yaml", "../examples/example_yamls/partially_wrong_unit_directory/Service.yaml", "../examples/example_yamls/partially_wrong_unit_directory/ServiceAccount.yaml", "../examples/example_yamls/valid_cronjob.yaml", "../examples/example_yamls/valid_deployment.yaml", "../examples/example_yamls/valid_job.yaml", "../examples/example_yamls/valid_namespace.yaml", "../examples/example_yamls/valid_unit.yaml"}
+
 	results, errors := linter.Lint(filepaths...)
 	logger := log.New()
 	for _, err := range errors {

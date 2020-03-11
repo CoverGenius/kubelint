@@ -37,7 +37,7 @@ type Linter struct {
 	v1ServiceRules                      []*V1ServiceRule                      // a register for all user-defined v1Service rules
 	genericRules                        []*GenericRule                        // a register for all user-defined Generic rules (applied to every object)
 	interdependentRules                 []*InterdependentRule                 // a register for all user-defined Interdependent rules (applied to the system as a whole)
-	fixes                               []*RuleSorter                         // fixes that should be applied to the resources in order to mitigate some errors on a future pass
+	fixes                               []*ruleSorter                         // fixes that should be applied to the resources in order to mitigate some errors on a future pass
 	resources                           []*Resource                           // All the resources that have been read in by this linter
 }
 
@@ -53,6 +53,7 @@ func NewLinter(l *log.Logger) *Linter {
 // Lint opens and lints the files and produces results that
 // can be logged later on
 func (l *Linter) Lint(filepaths ...string) ([]*Result, []error) {
+	l.logger.Debugf("Linting files: %#v\n", filepaths)
 	var errors []error
 	resources, errs := Read(filepaths...)
 	for _, resource := range resources {
@@ -61,12 +62,13 @@ func (l *Linter) Lint(filepaths ...string) ([]*Result, []error) {
 	errors = append(errors, errs...)
 	var results []*Result
 	// add interdependent checks
-	results = append(results, l.LintResources(resources)...)
+	results = append(results, l.lintResources(resources)...)
 	for _, resource := range resources {
 		r, err := l.LintResource(resource)
 		l.logger.Debugln("results from linting", resource.Filepath, r)
 		results = append(results, r...)
 		if err != nil {
+			l.logger.Debugln("Error from LintResource: ", err)
 			errors = append(errors, err)
 		}
 	}
@@ -82,7 +84,7 @@ func (l *Linter) LintBytes(data []byte, filepath string) ([]*Result, []error) {
 	}
 	var results []*Result
 	// add interdependent checks
-	results = append(results, l.LintResources(resources)...)
+	results = append(results, l.lintResources(resources)...)
 	for _, resource := range resources {
 		r, err := l.LintResource(resource)
 		results = append(results, r...)
@@ -102,7 +104,7 @@ func (l *Linter) LintFile(file *os.File) ([]*Result, []error) {
 	}
 	var results []*Result
 	// add interdependent checks
-	results = append(results, l.LintResources(resources)...)
+	results = append(results, l.lintResources(resources)...)
 	for _, resource := range resources {
 		r, err := l.LintResource(resource)
 		results = append(results, r...)
@@ -113,24 +115,24 @@ func (l *Linter) LintFile(file *os.File) ([]*Result, []error) {
 	return results, errors
 }
 
-//	LintResources takes a list of Yaml Derived Resources, applying interdependent rules ONLY
+//	lintResources takes a list of Yaml Derived Resources, applying interdependent rules ONLY
 //   and returns a list of Results
 //	to be logged or reported
-func (l *Linter) LintResources(resources []*YamlDerivedResource) []*Result {
+func (l *Linter) lintResources(resources []*YamlDerivedResource) []*Result {
 	var results []*Result
 	rules := l.createInterdependentRules(resources)
-	ruleSorter := NewRuleSorter(rules)
-	fixSorter := ruleSorter.Clone()
+	ruleSorter := newRuleSorter(rules)
+	fixSorter := ruleSorter.clone()
 	l.fixes = append(l.fixes, fixSorter)
-	for !ruleSorter.IsEmpty() {
-		rule := ruleSorter.PopNextAvailable()
+	for !ruleSorter.isEmpty() {
+		rule := ruleSorter.popNextAvailable()
 		if !rule.Condition() {
 			results = append(results, &Result{
 				Resources: resources,
 				Message:   rule.Message,
 				Level:     rule.Level,
 			})
-			dependentRules := ruleSorter.PopDependentRules(rule.ID)
+			dependentRules := ruleSorter.popDependentRules(rule.ID)
 			for _, dependentRule := range dependentRules {
 				results = append(results, &Result{
 					Resources: resources,
@@ -139,7 +141,7 @@ func (l *Linter) LintResources(resources []*YamlDerivedResource) []*Result {
 				})
 			}
 		} else {
-			fixSorter.Remove(rule.ID)
+			fixSorter.remove(rule.ID)
 		}
 	}
 	return results
@@ -155,11 +157,11 @@ func (l *Linter) LintResource(resource *YamlDerivedResource) ([]*Result, error) 
 	for _, rule := range rules {
 		l.logger.Debugf("Rule ID: %s\n\tPrereqs: %#v\n", rule.ID, rule.Prereqs)
 	}
-	ruleSorter := NewRuleSorter(rules)
-	fixSorter := ruleSorter.Clone()
+	ruleSorter := newRuleSorter(rules)
+	fixSorter := ruleSorter.clone()
 	l.fixes = append(l.fixes, fixSorter)
-	for !ruleSorter.IsEmpty() {
-		rule := ruleSorter.PopNextAvailable()
+	for !ruleSorter.isEmpty() {
+		rule := ruleSorter.popNextAvailable()
 		l.logger.Debugln("Testing rule", rule.ID)
 		if !rule.Condition() {
 			results = append(results, &Result{
@@ -167,7 +169,7 @@ func (l *Linter) LintResource(resource *YamlDerivedResource) ([]*Result, error) 
 				Message:   rule.Message,
 				Level:     rule.Level,
 			})
-			dependentRules := ruleSorter.PopDependentRules(rule.ID)
+			dependentRules := ruleSorter.popDependentRules(rule.ID)
 			for _, dependentRule := range dependentRules {
 				results = append(results, &Result{
 					Resources: []*YamlDerivedResource{resource},
@@ -177,7 +179,7 @@ func (l *Linter) LintResource(resource *YamlDerivedResource) ([]*Result, error) 
 			}
 		} else {
 			// this doesn't need to be fixed, so remove it from the fixSorter
-			fixSorter.Remove(rule.ID)
+			fixSorter.remove(rule.ID)
 		}
 	}
 	return results, err
@@ -188,11 +190,11 @@ func (l *Linter) LintResource(resource *YamlDerivedResource) ([]*Result, error) 
 func (l *Linter) ApplyFixes() ([]*Resource, []string) {
 	var appliedFixDescriptions []string
 	for _, sorter := range l.fixes {
-		for !sorter.IsEmpty() {
-			rule := sorter.PopNextAvailable()
+		for !sorter.isEmpty() {
+			rule := sorter.popNextAvailable()
 			fixed := rule.Fix()
 			if !fixed {
-				_ = sorter.PopDependentRules(rule.ID)
+				_ = sorter.popDependentRules(rule.ID)
 			} else {
 				appliedFixDescriptions = append(appliedFixDescriptions, rule.FixDescription())
 			}
