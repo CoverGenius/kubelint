@@ -621,9 +621,7 @@ func (r *V1ServiceAccountRule) createRule(serviceaccount *v1.ServiceAccount, ydr
 	return rule
 }
 
-/**
-*	V1ServiceRule represents a generic linter rule that can be applied to any v1.Service object.
-**/
+//	V1ServiceRule represents a generic linter rule that can be applied to any v1.Service object.
 type V1ServiceRule struct {
 	ID             RuleID
 	Prereqs        []RuleID
