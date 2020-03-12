@@ -67,7 +67,9 @@ func (r *ruleSorter) getDependents(masterId RuleID) []RuleID {
 	for id := range r.rules {
 		for _, masterRuleID := range r.rules[id].Prereqs {
 			if masterRuleID == masterId {
-				dependentIDs = append(dependentIDs, id)
+				if _, ok := r.edges[id]; ok {
+					dependentIDs = append(dependentIDs, id)
+				}
 				dependentIDs = append(dependentIDs, r.getDependents(id)...)
 			}
 		}
