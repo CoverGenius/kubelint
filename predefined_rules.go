@@ -195,6 +195,7 @@ var (
 			return len(podSpec.Containers) != 0
 		},
 		Message: "The Podspec should have at least 1 container defined",
+		Level:   log.ErrorLevel,
 	}
 	// A V1Container should have a non-null security context
 	V1_CONTAINER_EXISTS_SECURITY_CONTEXT = &V1ContainerRule{
@@ -419,6 +420,7 @@ var (
 			return len(wrongNamespaceResources) == 0, wrongNamespaceResources
 		},
 		Message: "All resources must be under the correct namespace",
+		Level:   log.ErrorLevel,
 		Fix: func(resources []*Resource) bool {
 			for _, resource := range resources {
 				if ns, ok := resource.Object.(*v1.Namespace); ok {
