@@ -2,6 +2,8 @@ package kubelint
 
 import (
 	"fmt"
+	"io/ioutil"
+
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	batchV1 "k8s.io/api/batch/v1"
@@ -44,7 +46,11 @@ type Linter struct {
 
 //	NewDefaultLinter returns a linter with absolutely no rules.
 func NewDefaultLinter() *Linter {
-	return &Linter{}
+	return &Linter{
+		logger: &log.Logger{
+			Out: ioutil.Discard,
+		},
+	}
 }
 
 // NewLinter sets the logger passed in and makes it possible to turn on debug statements to trace the execution of the linter, in case there are any problems on the client side. I recommend setting a logrus logger to DebugLevel to see

@@ -419,6 +419,30 @@ var (
 			return len(wrongNamespaceResources) == 0, wrongNamespaceResources
 		},
 		Message: "All resources must be under the correct namespace",
+		Fix: func(resources []*Resource) bool {
+			for _, resource := range resources {
+				if ns, ok := resource.Object.(*v1.Namespace); ok {
+					name := ns.Name
+					for _, r := range resources {
+						if r.Object == ns {
+							continue
+						}
+						r.Object.SetNamespace(name)
+					}
+					break
+				}
+			}
+			return true
+		},
+		FixDescription: func(resources []*Resource) string {
+			var namespace string
+			for _, resource := range resources {
+				if resource.Object.GetNamespace() != "" {
+					namespace = resource.Object.GetNamespace()
+				}
+			}
+			return fmt.Sprintf("Set everyone's namespace to %s", namespace)
+		},
 	}
 	// There should be a network policy for the namespace
 	INTERDEPENDENT_NETWORK_POLICY_REQUIRED = &InterdependentRule{
