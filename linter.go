@@ -160,12 +160,15 @@ func (l *Linter) LintResource(resource *YamlDerivedResource) ([]*Result, error) 
 		rule := ruleSorter.popNextAvailable()
 		l.logger.Debugln("Testing rule", rule.ID)
 		if !rule.Condition() {
+			l.logger.Debugln("Rule failed")
 			results = append(results, &Result{
 				Resources: []*YamlDerivedResource{resource},
 				Message:   rule.Message,
 				Level:     rule.Level,
 			})
+			l.logger.Debugf("Adding result: %#v\n", results[len(results)-1])
 			dependentRules := ruleSorter.popDependentRules(rule.ID)
+			l.logger.Debugf("Dependent rules: %#v\nWill add result for these too\n", dependentRules)
 			for _, dependentRule := range dependentRules {
 				results = append(results, &Result{
 					Resources: []*YamlDerivedResource{resource},
