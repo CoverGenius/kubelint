@@ -23,6 +23,7 @@ func Read(filepaths ...string) ([]*YamlDerivedResource, []error) {
 		var content []byte
 		var err error
 		if filepath == "-" {
+			filepath = os.Stdin.Name()
 			content, err = ioutil.ReadAll(os.Stdin)
 		} else {
 			content, err = ioutil.ReadFile(filepath)
