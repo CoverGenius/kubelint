@@ -72,6 +72,7 @@ func (r *ruleSorter) getDependents(masterId RuleID) []RuleID {
 					for _, dependentID := range dependentIDs {
 						if dependentID == id {
 							found = true
+							break
 						}
 					}
 					if !found {
@@ -79,7 +80,19 @@ func (r *ruleSorter) getDependents(masterId RuleID) []RuleID {
 						dependentIDs = append(dependentIDs, id)
 					}
 				}
-				dependentIDs = append(dependentIDs, r.getDependents(id)...)
+				transitiveDependents := r.getDependents(id)
+				for _, td := range transitiveDependents {
+					found := false
+					for _, dependentID := range dependentIDs {
+						if td == dependentID {
+							found = true
+							break
+						}
+					}
+					if !found {
+						dependentIDs = append(dependentIDs, td)
+					}
+				}
 			}
 		}
 	}
