@@ -20,7 +20,13 @@ func Read(filepaths ...string) ([]*YamlDerivedResource, []error) {
 	var errors []error
 	var resources []*YamlDerivedResource
 	for _, filepath := range filepaths {
-		content, err := ioutil.ReadFile(filepath)
+		var content []byte
+		var err error
+		if filepath == "-" {
+			content, err = ioutil.ReadAll(os.Stdin)
+		} else {
+			content, err = ioutil.ReadFile(filepath)
+		}
 		if err != nil {
 			errors = append(errors, err)
 			continue
