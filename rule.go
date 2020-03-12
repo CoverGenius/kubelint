@@ -15,7 +15,7 @@ import (
 // The unique identifier for a rule. This lets us define an execution order with the Prereqs field.
 type RuleID string
 
-type Rule struct {
+type rule struct {
 	ID             RuleID   // a string that uniquely identifies this rule wrt an object
 	Prereqs        []RuleID // rules that this rule relies on for safe execution
 	Condition      func() bool
@@ -26,27 +26,25 @@ type Rule struct {
 	FixDescription func() string
 }
 
-/**
-*	This represents a generic rule that can be applied to a deployment object.
-* 	All other AppsV1DeploymentRule structs are analogous.
-**/
+// AppsV1DeploymentRule represents a semantic enforcement. For example, you would like all appsv1.Deployments to
+// have 2 replicas. Your condition should check the field deployment.Spec.Replicas is non-nil and its value is 2.
+// This represents a generic rule that can be applied to a deployment object.
+// All other AppsV1DeploymentRule structs are analogous.
 type AppsV1DeploymentRule struct {
-	ID             RuleID
-	Prereqs        []RuleID
-	Condition      func(*appsv1.Deployment) bool
-	Message        string
-	Level          log.Level
-	Fix            func(*appsv1.Deployment) bool
-	FixDescription func(*appsv1.Deployment) string
+	ID             RuleID                          // an arbitrary unique string identifier for this rule
+	Prereqs        []RuleID                        // rules that should be executed before this rule (optional)
+	Condition      func(*appsv1.Deployment) bool   // The Condition to execute on the deployment object. If this function returns true, it means that the deployment resource satisfies this rule.
+	Message        string                          // The Message that should be reported to the user if the condition fails
+	Level          log.Level                       // The level of severity implied if this rule fails
+	Fix            func(*appsv1.Deployment) bool   // A mutating function that applies a fix. If Condition was called after this function was called, Condition should return true.
+	FixDescription func(*appsv1.Deployment) string // A function returning the string that describes the fix that was applied within the Fix function
 }
 
-/**
-*	Once we get a reference to an actual resource, we can interpolate this into the
-*	method bodies, and let every rule conform to the same structure.
-*	At this point, we have no information about where this resource came from.
-**/
-func (d *AppsV1DeploymentRule) CreateRule(deployment *appsv1.Deployment, ydr *YamlDerivedResource) *Rule {
-	r := &Rule{
+//	Once we get a reference to an actual resource, we can interpolate this into the
+//	method bodies, and let every rule conform to the same structure.
+//	At this point, we have no information about where this resource came from.
+func (d *AppsV1DeploymentRule) createRule(deployment *appsv1.Deployment, ydr *YamlDerivedResource) *rule {
+	r := &rule{
 		ID:      d.ID,
 		Prereqs: d.Prereqs,
 		Condition: func() bool {
@@ -74,9 +72,7 @@ func (d *AppsV1DeploymentRule) CreateRule(deployment *appsv1.Deployment, ydr *Ya
 	return r
 }
 
-/**
-*	V1NamespaceRule represents a generic linter rule that can be applied to any v1.Namespace object.
-**/
+//	V1NamespaceRule represents a generic linter rule that can be applied to any v1.Namespace object.
 type V1NamespaceRule struct {
 	ID             RuleID
 	Prereqs        []RuleID
@@ -87,12 +83,10 @@ type V1NamespaceRule struct {
 	FixDescription func(*v1.Namespace) string
 }
 
-/**
-* CreateRule transforms a V1NamespaceRule into a generic rule once it receives the parameter
-* to interpolate.
-**/
-func (r *V1NamespaceRule) CreateRule(namespace *v1.Namespace, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+// createRule transforms a V1NamespaceRule into a generic rule once it receives the parameter
+// to interpolate.
+func (r *V1NamespaceRule) createRule(namespace *v1.Namespace, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -121,9 +115,7 @@ func (r *V1NamespaceRule) CreateRule(namespace *v1.Namespace, ydr *YamlDerivedRe
 	return rule
 }
 
-/**
-*	V1PodSpecRule represents a generic linter rule that can be applied to any v1.Namespace object.
-**/
+//	V1PodSpecRule represents a generic linter rule that can be applied to any v1.Namespace object.
 type V1PodSpecRule struct {
 	ID             RuleID
 	Prereqs        []RuleID
@@ -134,12 +126,10 @@ type V1PodSpecRule struct {
 	FixDescription func(*v1.PodSpec) string
 }
 
-/**
-* CreateRule transforms a V1PodSpecRule into a generic rule once it receives the parameter
-* to interpolate.
-**/
-func (r *V1PodSpecRule) CreateRule(podSpec *v1.PodSpec, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+// createRule transforms a V1PodSpecRule into a generic rule once it receives the parameter
+// to interpolate.
+func (r *V1PodSpecRule) createRule(podSpec *v1.PodSpec, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -168,9 +158,7 @@ func (r *V1PodSpecRule) CreateRule(podSpec *v1.PodSpec, ydr *YamlDerivedResource
 	return rule
 }
 
-/**
-*	V1ContainerRule represents a generic linter rule that can be applied to any v1.Namespace object.
-**/
+//	V1ContainerRule represents a generic linter rule that can be applied to any v1.Namespace object.
 type V1ContainerRule struct {
 	ID             RuleID
 	Prereqs        []RuleID
@@ -181,12 +169,10 @@ type V1ContainerRule struct {
 	FixDescription func(*v1.Container) string
 }
 
-/**
-* CreateRule transforms a V1ContainerRule into a generic rule once it receives the parameter
-* to interpolate.
-**/
-func (r *V1ContainerRule) CreateRule(container *v1.Container, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+// createRule transforms a V1ContainerRule into a generic rule once it receives the parameter
+// to interpolate.
+func (r *V1ContainerRule) createRule(container *v1.Container, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -215,9 +201,7 @@ func (r *V1ContainerRule) CreateRule(container *v1.Container, ydr *YamlDerivedRe
 	return rule
 }
 
-/**
-*	V1PersistentVolumeClaimRule represents a generic linter rule that can be applied to any v1.PersistentVolumeClaim object.
-**/
+//	V1PersistentVolumeClaimRule represents a generic linter rule that can be applied to any v1.PersistentVolumeClaim object.
 type V1PersistentVolumeClaimRule struct {
 	ID             RuleID
 	Prereqs        []RuleID
@@ -228,12 +212,10 @@ type V1PersistentVolumeClaimRule struct {
 	FixDescription func(*v1.PersistentVolumeClaim) string
 }
 
-/**
-* CreateRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
-* to interpolate.
-**/
-func (r *V1PersistentVolumeClaimRule) CreateRule(pvc *v1.PersistentVolumeClaim, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+// createRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
+// to interpolate.
+func (r *V1PersistentVolumeClaimRule) createRule(pvc *v1.PersistentVolumeClaim, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -261,9 +243,7 @@ func (r *V1PersistentVolumeClaimRule) CreateRule(pvc *v1.PersistentVolumeClaim, 
 	return rule
 }
 
-/**
-*	V1Beta1ExtensionsDeployment represents a generic linter rule that can be applied to any v1beta1Extensions.Deployment object.
-**/
+//	V1Beta1ExtensionsDeployment represents a generic linter rule that can be applied to any v1beta1Extensions.Deployment object.
 type V1Beta1ExtensionsDeploymentRule struct {
 	ID             RuleID
 	Prereqs        []RuleID
@@ -274,12 +254,10 @@ type V1Beta1ExtensionsDeploymentRule struct {
 	FixDescription func(*v1beta1Extensions.Deployment) string
 }
 
-/**
-* CreateRule transforms a V1Beta1ExtensionsDeploymentRule into a generic rule once it receives the parameter
-* to interpolate.
-**/
-func (r *V1Beta1ExtensionsDeploymentRule) CreateRule(deployment *v1beta1Extensions.Deployment, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+// createRule transforms a V1Beta1ExtensionsDeploymentRule into a generic rule once it receives the parameter
+// to interpolate.
+func (r *V1Beta1ExtensionsDeploymentRule) createRule(deployment *v1beta1Extensions.Deployment, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -307,9 +285,7 @@ func (r *V1Beta1ExtensionsDeploymentRule) CreateRule(deployment *v1beta1Extensio
 	return rule
 }
 
-/**
-*	BatchV1JobRule represents a generic linter rule that can be applied to any batchV1.Job object.
-**/
+//	BatchV1JobRule represents a generic linter rule that can be applied to any batchV1.Job object.
 type BatchV1JobRule struct {
 	ID             RuleID
 	Prereqs        []RuleID
@@ -320,12 +296,10 @@ type BatchV1JobRule struct {
 	FixDescription func(*batchV1.Job) string
 }
 
-/**
-* CreateRule transforms a BatchV1JobRule into a generic rule once it receives the parameter
-* to interpolate.
-**/
-func (r *BatchV1JobRule) CreateRule(job *batchV1.Job, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+// createRule transforms a BatchV1JobRule into a generic rule once it receives the parameter
+// to interpolate.
+func (r *BatchV1JobRule) createRule(job *batchV1.Job, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -353,9 +327,7 @@ func (r *BatchV1JobRule) CreateRule(job *batchV1.Job, ydr *YamlDerivedResource) 
 	return rule
 }
 
-/**
-*	BatchV1Beta1CronJobRule represents a generic linter rule that can be applied to any batchV1beta1.CronJob object.
-**/
+//	BatchV1Beta1CronJobRule represents a generic linter rule that can be applied to any batchV1beta1.CronJob object.
 type BatchV1Beta1CronJobRule struct {
 	ID             RuleID
 	Prereqs        []RuleID
@@ -366,12 +338,10 @@ type BatchV1Beta1CronJobRule struct {
 	FixDescription func(*batchV1beta1.CronJob) string
 }
 
-/**
-* CreateRule transforms a BatchV1Beta1CronJobRule into a generic rule once it receives the parameter
-* to interpolate.
-**/
-func (r *BatchV1Beta1CronJobRule) CreateRule(cronjob *batchV1beta1.CronJob, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+// createRule transforms a BatchV1Beta1CronJobRule into a generic rule once it receives the parameter
+// to interpolate.
+func (r *BatchV1Beta1CronJobRule) createRule(cronjob *batchV1beta1.CronJob, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -399,9 +369,7 @@ func (r *BatchV1Beta1CronJobRule) CreateRule(cronjob *batchV1beta1.CronJob, ydr 
 	return rule
 }
 
-/**
-*	V1Beta1ExtensionsIngressRule represents a generic linter rule that can be applied to any v1beta1Extensions.Ingress object.
-**/
+//	V1Beta1ExtensionsIngressRule represents a generic linter rule that can be applied to any v1beta1Extensions.Ingress object.
 type V1Beta1ExtensionsIngressRule struct {
 	ID             RuleID
 	Prereqs        []RuleID
@@ -412,12 +380,10 @@ type V1Beta1ExtensionsIngressRule struct {
 	FixDescription func(*v1beta1Extensions.Ingress) string
 }
 
-/**
-* CreateRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
-* to interpolate.
-**/
-func (r *V1Beta1ExtensionsIngressRule) CreateRule(ingress *v1beta1Extensions.Ingress, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+// createRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
+// to interpolate.
+func (r *V1Beta1ExtensionsIngressRule) createRule(ingress *v1beta1Extensions.Ingress, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -445,9 +411,7 @@ func (r *V1Beta1ExtensionsIngressRule) CreateRule(ingress *v1beta1Extensions.Ing
 	return rule
 }
 
-/**
-*	NetworkingV1NetworkPolicyRule represents a generic linter rule that can be applied to any networkingV1.NetworkPolicy object.
-**/
+//	NetworkingV1NetworkPolicyRule represents a generic linter rule that can be applied to any networkingV1.NetworkPolicy object.
 type NetworkingV1NetworkPolicyRule struct {
 	ID             RuleID
 	Prereqs        []RuleID
@@ -458,12 +422,10 @@ type NetworkingV1NetworkPolicyRule struct {
 	FixDescription func(*networkingV1.NetworkPolicy) string
 }
 
-/**
-* CreateRule transforms a NetworkingV1NetworkPolicyRule into a generic rule once it receives the parameter
-* to interpolate.
-**/
-func (r *NetworkingV1NetworkPolicyRule) CreateRule(networkpolicy *networkingV1.NetworkPolicy, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+// createRule transforms a NetworkingV1NetworkPolicyRule into a generic rule once it receives the parameter
+// to interpolate.
+func (r *NetworkingV1NetworkPolicyRule) createRule(networkpolicy *networkingV1.NetworkPolicy, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -491,9 +453,7 @@ func (r *NetworkingV1NetworkPolicyRule) CreateRule(networkpolicy *networkingV1.N
 	return rule
 }
 
-/**
-*	V1Beta1ExtensionsNetworkPolicyRule represents a generic linter rule that can be applied to any v1beta1Extensions.NetworkPolicy object.
-**/
+//	V1Beta1ExtensionsNetworkPolicyRule represents a generic linter rule that can be applied to any v1beta1Extensions.NetworkPolicy object.
 type V1Beta1ExtensionsNetworkPolicyRule struct {
 	ID             RuleID
 	Prereqs        []RuleID
@@ -504,12 +464,10 @@ type V1Beta1ExtensionsNetworkPolicyRule struct {
 	FixDescription func(*v1beta1Extensions.NetworkPolicy) string
 }
 
-/**
-* CreateRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
-* to interpolate.
-**/
-func (r *V1Beta1ExtensionsNetworkPolicyRule) CreateRule(networkpolicy *v1beta1Extensions.NetworkPolicy, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+// createRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
+// to interpolate.
+func (r *V1Beta1ExtensionsNetworkPolicyRule) createRule(networkpolicy *v1beta1Extensions.NetworkPolicy, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -537,9 +495,7 @@ func (r *V1Beta1ExtensionsNetworkPolicyRule) CreateRule(networkpolicy *v1beta1Ex
 	return rule
 }
 
-/**
-*	RbacV1RoleRule represents a generic linter rule that can be applied to any rbacV1.Role object.
-**/
+//	RbacV1RoleRule represents a generic linter rule that can be applied to any rbacV1.Role object.
 type RbacV1RoleRule struct {
 	ID             RuleID
 	Prereqs        []RuleID
@@ -550,12 +506,10 @@ type RbacV1RoleRule struct {
 	FixDescription func(*rbacV1.Role) string
 }
 
-/**
-* CreateRule transforms a RbacV1RoleRule into a generic rule once it receives the parameter
-* to interpolate.
-**/
-func (r *RbacV1RoleRule) CreateRule(role *rbacV1.Role, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+// createRule transforms a RbacV1RoleRule into a generic rule once it receives the parameter
+// to interpolate.
+func (r *RbacV1RoleRule) createRule(role *rbacV1.Role, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -583,9 +537,7 @@ func (r *RbacV1RoleRule) CreateRule(role *rbacV1.Role, ydr *YamlDerivedResource)
 	return rule
 }
 
-/**
-*	RbacV1Beta1RoleBindingRule represents a generic linter rule that can be applied to any rbacV1beta1.RoleBinding object.
-**/
+//	RbacV1Beta1RoleBindingRule represents a generic linter rule that can be applied to any rbacV1beta1.RoleBinding object.
 type RbacV1Beta1RoleBindingRule struct {
 	ID             RuleID
 	Prereqs        []RuleID
@@ -596,12 +548,10 @@ type RbacV1Beta1RoleBindingRule struct {
 	FixDescription func(*rbacV1beta1.RoleBinding) string
 }
 
-/**
-* CreateRule transforms a RbacV1Beta1RoleBindingRule into a generic rule once it receives the parameter
-* to interpolate.
-**/
-func (r *RbacV1Beta1RoleBindingRule) CreateRule(rolebinding *rbacV1beta1.RoleBinding, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+// createRule transforms a RbacV1Beta1RoleBindingRule into a generic rule once it receives the parameter
+// to interpolate.
+func (r *RbacV1Beta1RoleBindingRule) createRule(rolebinding *rbacV1beta1.RoleBinding, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -629,9 +579,7 @@ func (r *RbacV1Beta1RoleBindingRule) CreateRule(rolebinding *rbacV1beta1.RoleBin
 	return rule
 }
 
-/**
-*	V1ServiceAccountRule represents a generic linter rule that can be applied to any v1.ServiceAccount object.
-**/
+//	V1ServiceAccountRule represents a generic linter rule that can be applied to any v1.ServiceAccount object.
 type V1ServiceAccountRule struct {
 	ID             RuleID
 	Prereqs        []RuleID
@@ -642,12 +590,10 @@ type V1ServiceAccountRule struct {
 	FixDescription func(*v1.ServiceAccount) string
 }
 
-/**
-* CreateRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
-* to interpolate.
-**/
-func (r *V1ServiceAccountRule) CreateRule(serviceaccount *v1.ServiceAccount, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+// createRule transforms a <ResourceType>Rule into a generic rule once it receives the parameter
+// to interpolate.
+func (r *V1ServiceAccountRule) createRule(serviceaccount *v1.ServiceAccount, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -675,9 +621,7 @@ func (r *V1ServiceAccountRule) CreateRule(serviceaccount *v1.ServiceAccount, ydr
 	return rule
 }
 
-/**
-*	V1ServiceRule represents a generic linter rule that can be applied to any v1.Service object.
-**/
+//	V1ServiceRule represents a generic linter rule that can be applied to any v1.Service object.
 type V1ServiceRule struct {
 	ID             RuleID
 	Prereqs        []RuleID
@@ -688,12 +632,10 @@ type V1ServiceRule struct {
 	FixDescription func(*v1.Service) string
 }
 
-/**
-* CreateRule transforms a V1ServiceRule into a generic rule once it receives the parameter
-* to interpolate.
-**/
-func (r *V1ServiceRule) CreateRule(service *v1.Service, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+// createRule transforms a V1ServiceRule into a generic rule once it receives the parameter
+// to interpolate.
+func (r *V1ServiceRule) createRule(service *v1.Service, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -721,11 +663,9 @@ func (r *V1ServiceRule) CreateRule(service *v1.Service, ydr *YamlDerivedResource
 	return rule
 }
 
-/**
-*	GenericRule represents a generic linter rule that can be applied to an object of any type.
-*	Use this if the type you want to apply a check to is not currently supported, or it's a check
-*	that can apply uniformly to all resources, for example, each resource is registered under a namespace.
-**/
+//	GenericRule represents a generic linter rule that can be applied to an object of any type.
+//	Use this if the type you want to apply a check to is not currently supported, or it's a check
+//	that can apply uniformly to all resources, for example, each resource is registered under a namespace.
 type GenericRule struct {
 	ID             RuleID
 	Prereqs        []RuleID
@@ -736,12 +676,10 @@ type GenericRule struct {
 	FixDescription func(*Resource) string
 }
 
-/**
-* CreateRule transforms a GenericRule into a generic rule once it receives the parameter
-* to interpolate.
-**/
-func (r *GenericRule) CreateRule(resource *Resource, ydr *YamlDerivedResource) *Rule {
-	rule := &Rule{
+// createRule transforms a GenericRule into a generic rule once it receives the parameter
+// to interpolate.
+func (r *GenericRule) createRule(resource *Resource, ydr *YamlDerivedResource) *rule {
+	rule := &rule{
 		ID:      r.ID,
 		Prereqs: r.Prereqs,
 		Condition: func() bool {
@@ -769,42 +707,55 @@ func (r *GenericRule) CreateRule(resource *Resource, ydr *YamlDerivedResource) *
 	return rule
 }
 
-/**
-*	InterdependentRule represents a generic linter rule that will be applied to the resources as a whole.
-*	An example would be to check that for all objects, their namespace corresponds to an existing namespace object.
-*	You will need to do your own typecasting or rely on the methods available to you in metav1.Object and meta.Type to access the objects' fields.
-**/
+//	InterdependentRule represents a generic linter rule that will be applied to the resources as a whole.
+//	An example would be to check that for all objects, their namespace corresponds to an existing namespace object.
+//	You will need to do your own typecasting or rely on the methods available to you in metav1.Object and meta.Type to access the objects' fields.
 type InterdependentRule struct {
 	ID             RuleID
-	Prereqs        []RuleID
-	Condition      func([]*Resource) bool
+	Condition      func([]*Resource) (bool, []*Resource) // if it returns false, it will also return a list of the offending resources. This is passed to the result.Resources field later.
 	Message        string
 	Level          log.Level
 	Fix            func([]*Resource) bool
 	FixDescription func([]*Resource) string
 }
 
-/**
-* CreateRule transforms a InterdependentRule into a generic rule once it receives the parameter
-* to interpolate.
-**/
-func (r *InterdependentRule) CreateRule(resources []*YamlDerivedResource) *Rule {
+type interdependentRule struct {
+	ID             RuleID
+	Condition      func() bool // if it returns false, it will also return a list of the offending resources. This is passed to the result.Resources field later.
+	Message        string
+	Level          log.Level
+	Fix            func() bool
+	FixDescription func() string
+	Resources      []*YamlDerivedResource
+}
+
+// createRule transforms a InterdependentRule into a generic rule once it receives the parameter
+// to interpolate.
+func (r *InterdependentRule) createRule(resources []*YamlDerivedResource) *interdependentRule {
 	var bareResources []*Resource
 	for _, r := range resources {
 		bareResources = append(bareResources, &r.Resource)
 	}
-	rule := &Rule{
-		ID:      r.ID,
-		Prereqs: r.Prereqs,
-		Condition: func() bool {
-			if r.Condition == nil {
-				return true
+	// we need to silently execute the condition so we can find out which resources are relevant :(
+	// This means prerequisites are disallowed. sorry :(
+	success, offendingResources := r.Condition(bareResources)
+	// collect information about offending resources
+	var offendingYamls []*YamlDerivedResource
+	for _, offendingResource := range offendingResources {
+		for _, yaml := range resources {
+			if &yaml.Resource == offendingResource {
+				offendingYamls = append(offendingYamls, yaml)
 			}
-			return r.Condition(bareResources)
+		}
+	}
+	rule := &interdependentRule{
+		ID: r.ID,
+		Condition: func() bool {
+			return success
 		},
 		Message:   r.Message,
 		Level:     r.Level,
-		Resources: resources,
+		Resources: offendingYamls,
 		Fix: func() bool {
 			if r.Fix == nil {
 				return false

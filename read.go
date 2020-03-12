@@ -13,16 +13,21 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
-/**
-*	Given a list of filenames to read from, produce
-*	YamlDerivedResources
-*	and report if the call to ReadFile(filepath) for a certain passed filepath failed
-**/
+//	Given a list of filenames to read from, produce
+//	YamlDerivedResources
+//	and report if the call to ReadFile(filepath) for a certain passed filepath failed
 func Read(filepaths ...string) ([]*YamlDerivedResource, []error) {
 	var errors []error
 	var resources []*YamlDerivedResource
 	for _, filepath := range filepaths {
-		content, err := ioutil.ReadFile(filepath)
+		var content []byte
+		var err error
+		if filepath == "-" {
+			filepath = os.Stdin.Name()
+			content, err = ioutil.ReadAll(os.Stdin)
+		} else {
+			content, err = ioutil.ReadFile(filepath)
+		}
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -34,6 +39,7 @@ func Read(filepaths ...string) ([]*YamlDerivedResource, []error) {
 	return resources, errors
 }
 
+// ReadFile takes in a file pointer and returns the yaml derived resources found in the file
 func ReadFile(file *os.File) ([]*YamlDerivedResource, []error) {
 	content, err := ioutil.ReadAll(file)
 	if err != nil {
@@ -43,12 +49,10 @@ func ReadFile(file *os.File) ([]*YamlDerivedResource, []error) {
 	return resources, errors
 }
 
-/**
-* ReadBytes takes in a bytes representation of a kubernetes object declaration
-* and attempts to construct the concrete in-memory representation of them.
-* It will silently fail if something doesn't conform to the Resource struct requirements (meta.Type and metav1.Object conformance)
-* I may have to change this in the future.
-**/
+// ReadBytes takes in a bytes representation of a kubernetes object declaration
+// and attempts to construct the concrete in-memory representation of them.
+// It will silently fail if something doesn't conform to the Resource struct requirements (meta.Type and metav1.Object conformance)
+// I may have to change this in the future.
 func ReadBytes(bytes []byte, filepath string) ([]*YamlDerivedResource, []error) {
 	var errors []error
 	var resources []*YamlDerivedResource
@@ -100,10 +104,8 @@ func detectLineBreak(haystack []byte) string {
 	return "\n"
 }
 
-/**
-* For each object (in the order that they occur in the yaml file), tell me what line number the object starts on.
-* This is brittle, will break as soon as kubernetes objects aren't given the apiVersion as the first key sorry about this.
- */
+// For each object (in the order that they occur in the yaml file), tell me what line number the object starts on.
+// This is brittle, will break as soon as kubernetes objects aren't given the apiVersion as the first key sorry about this.
 func findLineNumbers(data []byte) []int {
 	objectSignifier := []byte("apiVersion:")
 	numObjects := bytesPkg.Count(data, objectSignifier)

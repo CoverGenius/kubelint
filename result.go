@@ -4,9 +4,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-/**
-*	Struct to carry all information necessary for the logger.
-**/
+//	Result carries all information necessary for the logger.
 type Result struct {
 	Resources []*YamlDerivedResource // the resource(s) on which the rule was performed to get this result
 	Message   string                 // the complaining message (eg "no securityContextKey present")

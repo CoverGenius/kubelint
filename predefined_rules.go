@@ -11,43 +11,38 @@ import (
 	batchV1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	networkingV1 "k8s.io/api/networking/v1"
 )
 
-/**
-* Predefined rules relating to resources of type appsv1.Deployment
-* - An AppsV1Deployment should have a project label *	APPSV1_DEPLOYMENT_EXISTS_PROJECT_LABEL
-* - An AppsV1Deployment should have an app.kubernetes.io/name label *  APPSV1_DEPLOYMENT_EXISTS_APP_K8S_LABEL
-* - An AppsV1Deployment should be within a namespace * APPSV1_DEPLOYMENT_WITHIN_NAMESPACE
-* - An AppsV1Deployment should specify a liveness endpoint * APPSV1_DEPLOYMENT_CONTAINER_EXISTS_LIVENESS
-* - An AppsV1Deployment should specify a readiness endpoint * APPSV1_DEPLOYMENT_CONTAINER_EXISTS_READINESS
-* - An AppsV1Deploument should have liveness and readiness endpoints that aren't the same * APPSV1_DEPLOYMENT_LIVENESS_READINESS_NONMATCHING
-* Predefined rules relating to resources of type v1.PodSpec
-* - A V1PodSpec should have a non-nil security context * V1_PODSPEC_NON_NIL_SECURITY_CONTEXT
-* - A V1PodSpec should specify runAsNonRoot: true * V1_PODSPEC_RUN_AS_NON_ROOT
-* - A V1PodSpec should have a user and group ID of 44444 * V1_PODSPEC_CORRECT_USER_GROUP_ID
-* - A V1PodSpec should have exactly one container * V1_PODSPEC_EXACTLY_1_CONTAINER
-* - A V1PodSpec should have a non-zero number of containers * V1_PODSPEC_NON_ZERO_CONTAINERS
-* Predefined rules relating to resources of type v1.Container
-* - A V1Container should have a non-null security context * V1_CONTAINER_EXISTS_SECURITY_CONTEXT
-* - A V1Container should not allow privilege escalation * V1_CONTAINER_ALLOW_PRIVILEGE_ESCALATION_FALSE
-* - A V1Container's image should come from a set of allowed images defined in IsImageAllowed * V1_CONTAINER_VALID_IMAGE
-* - A V1Container should have privileged set to false * V1_CONTAINER_PRIVILEGED_FALSE
-* - A V1Container should specify Resource Limits and Requests * V1_CONTAINER_EXISTS_RESOURCE_LIMITS_AND_REQUESTS
-* - A V1Container should make CPU requests that are less than or equal to 100% * V1_CONTAINER_REQUESTS_CPU_REASONABLE
-* Predefined rules relating to resources of type batchV1beta1.CronJob
-* - A BatchV1Beta1CronJob should be within a namespace * BATCHV1_BETA1_CRONJOB_WITHIN_NAMESPACE
-* - A BatchV1Beta1CronJob should forbid concurrent operations * BATCHV1_BETA1_CRONJOB_FORBID_CONCURRENT
-* Predefined rules relating to resources of type batchV1.Job
-* - A BatchV1Job should be within a namespace * BATCHV1_JOB_WITHIN_NAMESPACE
-* - A BatchV1Job's restart policy should be set to Never * BATCHV1_JOB_RESTART_NEVER
-* - A BatchV1Job's Time to Live should be set * BATCHV1_JOB_EXISTS_TTL
-* Predefined rules relating to resources of type v1.Namespace
-* - A namespace should have a valid DNS name * V1_NAMESPACE_VALID_DNS
-* Predefined rules relating to resources of type v1.Service
-* - A V1Service should be within a namespace * V1_SERVICE_WITHIN_NAMESPACE
-* - A V1Service name should be a valid DNS * V1_SERVICE_NAME_VALID_DNS
-**/
-
+// Predefined rules relating to resources of type appsv1.Deployment
+// - An AppsV1Deployment should have a project label *	APPSV1_DEPLOYMENT_EXISTS_PROJECT_LABEL
+// - An AppsV1Deployment should have an app.kubernetes.io/name label *  APPSV1_DEPLOYMENT_EXISTS_APP_K8S_LABEL
+// - An AppsV1Deployment should be within a namespace * APPSV1_DEPLOYMENT_WITHIN_NAMESPACE
+// - An AppsV1Deployment should specify a liveness endpoint * APPSV1_DEPLOYMENT_CONTAINER_EXISTS_LIVENESS
+// - An AppsV1Deployment should specify a readiness endpoint * APPSV1_DEPLOYMENT_CONTAINER_EXISTS_READINESS
+// - An AppsV1Deploument should have liveness and readiness endpoints that aren't the same * APPSV1_DEPLOYMENT_LIVENESS_READINESS_NONMATCHING
+// Predefined rules relating to resources of type v1.PodSpec
+// - A V1PodSpec should have a non-nil security context * V1_PODSPEC_NON_NIL_SECURITY_CONTEXT
+// - A V1PodSpec should specify runAsNonRoot: true * V1_PODSPEC_RUN_AS_NON_ROOT
+// - A V1PodSpec should have a user and group ID of 44444 * CT_USER_GROUP_ID
+// - A V1PodSpec should have exactly one container * V1_PODSPEC_EXACTLY_1_CONTAINER
+// - A V1PodSpec should have a non-zero number of containers * V1_PODSPEC_NON_ZERO_CONTAINERS
+// Predefined rules relating to resources of type v1.Container
+// - A V1Container should have a non-null security context * V1_CONTAINER_EXISTS_SECURITY_CONTEXT
+// - A V1Container should not allow privilege escalation * V1_CONTAINER_ALLOW_PRIVILEGE_ESCALATION_FALSE
+// - A V1Container's image should come from a set of allowed images defined in isImageAllowed * V1_CONTAINER_VALID_IMAGE
+// - A V1Container should have privileged set to false * V1_CONTAINER_PRIVILEGED_FALSE
+// - A V1Container should specify Resource Limits and Requests * V1_CONTAINER_EXISTS_RESOURCE_LIMITS_AND_REQUESTS
+// - A V1Container should make CPU requests that are less than or equal to 100% * V1_CONTAINER_REQUESTS_CPU_REASONABLE
+// Predefined rules relating to resources of type batchV1.Job
+// - A BatchV1Beta1CronJob should be within a namespace
+// - A BatchV1Beta1CronJob should forbid concurrent operations * BATCHV1_BETA1_CRONJOB_FORBID_CONCURRENT
+// - A BatchV1Job should be within a namespace * BATCHV1_JOB_WITHIN_NAMESPACE
+// - A BatchV1Job's restart policy should be set to Never * BATCHV1_JOB_RESTART_NEVER
+// - A BatchV1Job's Time to Live should be set * BATCHV1_JOB_EXISTS_TTL
+// - A namespace should have a valid DNS name * V1_NAMESPACE_VALID_DNS
+// - A V1Service should be within a namespace * V1_SERVICE_WITHIN_NAMESPACE
+// - A V1Service name should be a valid DNS * V1_SERVICE_NAME_VALID_DNS
 var (
 	// An AppsV1Deployment should have a project label.
 	APPSV1_DEPLOYMENT_EXISTS_PROJECT_LABEL = &AppsV1DeploymentRule{
@@ -115,7 +110,7 @@ var (
 	// An AppsV1Deploument should have liveness and readiness endpoints that aren't the same
 	APPSV1_DEPLOYMENT_LIVENESS_READINESS_NONMATCHING = &AppsV1DeploymentRule{
 		ID:      "APPSV1_DEPLOYMENT_LIVENESS_READINESS_NONMATCHING",
-		Prereqs: []RuleID{"V1_PODSPEC_NON_ZERO_CONTAINERS", "V1_DEPLOYMENT_CONTAINER_EXISTS_READINESS", "V1_DEPLOYMENT_CONTAINER_EXISTS_LIVENESS"},
+		Prereqs: []RuleID{"V1_PODSPEC_NON_ZERO_CONTAINERS", "APPSV1_DEPLOYMENT_CONTAINER_EXISTS_READINESS", "APPSV1_DEPLOYMENT_CONTAINER_EXISTS_LIVENESS"},
 		Condition: func(deployment *appsv1.Deployment) bool {
 			container := deployment.Spec.Template.Spec.Containers[0]
 			return container.LivenessProbe.Handler.HTTPGet.Path != container.ReadinessProbe.Handler.HTTPGet.Path
@@ -200,6 +195,7 @@ var (
 			return len(podSpec.Containers) != 0
 		},
 		Message: "The Podspec should have at least 1 container defined",
+		Level:   log.ErrorLevel,
 	}
 	// A V1Container should have a non-null security context
 	V1_CONTAINER_EXISTS_SECURITY_CONTEXT = &V1ContainerRule{
@@ -214,7 +210,7 @@ var (
 			return true
 		},
 		FixDescription: func(container *v1.Container) string {
-			return fmt.Sprintf("Set container %'s security context to the empty map", container.Name)
+			return fmt.Sprintf("Set container %s's security context to the empty map", container.Name)
 		},
 	}
 	// A V1Container should not allow privilege escalation
@@ -236,11 +232,11 @@ var (
 			return fmt.Sprintf("Set AllowPrivilegeEscalation to false on Container %s", container.Name)
 		},
 	}
-	// A V1Container's image should come from a set of allowed images defined in IsImageAllowed
+	// A V1Container's image should come from a set of allowed images defined in isImageAllowed
 	V1_CONTAINER_VALID_IMAGE = &V1ContainerRule{
 		ID: "V1_CONTAINER_VALID_IMAGE",
 		Condition: func(container *v1.Container) bool {
-			return IsImageAllowed(container.Image)
+			return isImageAllowed(container.Image)
 		},
 		Message: "The container's image was not from the set of allowed images",
 		Level:   log.ErrorLevel,
@@ -381,7 +377,103 @@ var (
 	}
 )
 
-func IsImageAllowed(image string) bool {
+var (
+	// A unit should contain exactly one namespace.
+	INTERDEPENDENT_ONE_NAMESPACE = &InterdependentRule{
+		ID: "INTERDEPENDENT_ONE_NAMESPACE",
+		Condition: func(resources []*Resource) (bool, []*Resource) {
+			var namespaces []*Resource
+			for _, resource := range resources {
+				if resource.TypeInfo.GetKind() == "Namespace" {
+					namespaces = append(namespaces, resource)
+				}
+			}
+			return len(namespaces) == 1, namespaces
+		},
+		Message: "The unit should contain exactly one namespace",
+		Level:   log.ErrorLevel,
+	}
+	// All resources should be under the namespace in the unit
+	INTERDEPENDENT_MATCHING_NAMESPACE = &InterdependentRule{
+		ID: "INTERDEPENDENT_MATCHING_NAMESPACE",
+		Condition: func(resources []*Resource) (bool, []*Resource) {
+			var namespace *v1.Namespace
+			for _, resource := range resources {
+				if ns, ok := resource.Object.(*v1.Namespace); ok {
+					namespace = ns
+					break
+				}
+			}
+			if namespace == nil {
+				return true, nil
+			}
+			var wrongNamespaceResources []*Resource
+			// now test that all ppl are under that namespace
+			for _, resource := range resources {
+				if resource.TypeInfo.GetKind() == "Namespace" {
+					continue
+				}
+				if resource.Object.GetNamespace() != namespace.Name {
+					wrongNamespaceResources = append(wrongNamespaceResources, resource)
+				}
+			}
+			return len(wrongNamespaceResources) == 0, wrongNamespaceResources
+		},
+		Message: "All resources must be under the correct namespace",
+		Level:   log.ErrorLevel,
+		Fix: func(resources []*Resource) bool {
+			for _, resource := range resources {
+				if ns, ok := resource.Object.(*v1.Namespace); ok {
+					name := ns.Name
+					for _, r := range resources {
+						if r.Object == ns {
+							continue
+						}
+						r.Object.SetNamespace(name)
+					}
+					break
+				}
+			}
+			return true
+		},
+		FixDescription: func(resources []*Resource) string {
+			var namespace string
+			for _, resource := range resources {
+				if resource.Object.GetNamespace() != "" {
+					namespace = resource.Object.GetNamespace()
+				}
+			}
+			return fmt.Sprintf("Set everyone's namespace to %s", namespace)
+		},
+	}
+	// There should be a network policy for the namespace
+	INTERDEPENDENT_NETWORK_POLICY_REQUIRED = &InterdependentRule{
+		ID: "INTERDEPENDENT_NETWORK_POLICY_REQUIRED",
+		Condition: func(resources []*Resource) (bool, []*Resource) {
+			var namespaces []*v1.Namespace
+			for _, resource := range resources {
+				if n, ok := resource.Object.(*v1.Namespace); ok {
+					namespaces = append(namespaces, n)
+				}
+			}
+			if len(namespaces) != 1 {
+				return true, nil // cuz test isn't relevant
+			}
+			found := false
+			for _, resource := range resources {
+				if _, ok := resource.Object.(*networkingV1.NetworkPolicy); ok {
+					found = true
+					break
+				}
+			}
+			return found, nil
+		},
+		Message: "There must be a network policy defined",
+		Level:   log.ErrorLevel,
+	}
+)
+
+func isImageAllowed(image string) bool {
 	ALLOWED_DOCKER_REGISTRIES := []string{"277433404353.dkr.ecr.eu-central-1.amazonaws.com"}
 	for _, r := range ALLOWED_DOCKER_REGISTRIES {
 		if strings.HasPrefix(image, r) {

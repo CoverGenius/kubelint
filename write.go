@@ -11,10 +11,8 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
-/**
-*	Writes the passed resources to the given file in their YAML representation
-*	Eg. Resource{*appsv1.Deployment{..}} -> apiVersion: apps/v1\nkind:Deployment\n ...
-**/
+//	Writes the passed resources to the given file in their YAML representation
+//	Eg. Resource{*appsv1.Deployment{..}} -> apiVersion: apps/v1\nkind:Deployment\n ...
 func WriteToFile(file *os.File, resources ...*Resource) []error {
 	bytes, errors := Write(resources...)
 	_, err := file.Write(bytes)
@@ -22,9 +20,7 @@ func WriteToFile(file *os.File, resources ...*Resource) []error {
 	return errors
 }
 
-/**
-*	Marshals the given resources, using the YAML separator between resources.
-**/
+//	Marshals the given resources, using the YAML separator between resources.
 func Write(resources ...*Resource) ([]byte, []error) {
 	var aggregateBytes []byte
 	var errors []error
