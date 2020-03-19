@@ -7,6 +7,7 @@ can even implement your own fix. It's up to you what you do with the in-memory r
 but kubelint also provides some utility functions to write kubernetes resources to file or as a bytes representation.
 
 To summarise, the main objectives you can fulfill with kubelint are:
+
 1. Linting YAML kubernetes resource for correctness
 
 2. Reporting resource definition errors

@@ -14,6 +14,9 @@ import (
 	networkingV1 "k8s.io/api/networking/v1"
 )
 
+/*
+Helllo World? What does this look like
+*/
 // Predefined rules relating to resources of type appsv1.Deployment
 // - An AppsV1Deployment should have a project label *	APPSV1_DEPLOYMENT_EXISTS_PROJECT_LABEL
 // - An AppsV1Deployment should have an app.kubernetes.io/name label *  APPSV1_DEPLOYMENT_EXISTS_APP_K8S_LABEL
