@@ -7,6 +7,7 @@ can even implement your own fix. It's up to you what you do with the in-memory r
 but kubelint also provides some utility functions to write kubernetes resources to file or as a bytes representation.
 
 To summarise, the main objectives you can fulfill with kubelint are:
+
 1. Linting YAML kubernetes resource for correctness
 
 2. Reporting resource definition errors
@@ -48,7 +49,7 @@ to the filepath or a bytes slice.
 	}
 
 The result might look like:
-	ERRO[0000] All deployments should have runAsNonRoot set to true  filepath=example_yamls/deployment_non_root_false.yaml line number=1 resource name=hello-world-web
+	ERRO[0000] All deployments should have runAsNonRoot set to true
 
 If you want the error messages to be more informative, you can pull out information from the Resources field. For most results,
 there will only be one resource in this slice, but for rules referencing many resources, it could be multiple. You would need to
@@ -61,6 +62,11 @@ define those yourself.
 			"filename": result.Resources[0].Filename,
 		}).Log(result.Level, result.Message)
 	}
+
+This'll give you
+	ERRO[0000] All deployments should have runAsNonRoot set to true  filepath=example_yamls/deployment_non_root_false.yaml line number=1 resource name=hello-world-web
+
+
 You can also use any of the predefined rules in the kubelint package to pass to your linter.
 Just make sure that if any prerequisites are listed within the rule definition that you include these too.
 The prerequisites are rules that must be executed before the current rule. This is usually because the prerequisite
