@@ -78,6 +78,13 @@ Predefined rules relating to resources of type v1.Service
 
 - A V1Service name should be a valid DNS: V1_SERVICE_NAME_VALID_DNS
 
+Predefined interdependent rules
+
+- A unit should always contain one namespace: INTERDEPENDENT_ONE_NAMESPACE
+
+- All resources should be under the namespace in the unit: INTERDEPENDENT_MATCHING_NAMESPACE
+
+- The unit should contain a network policy: INTERDEPENDENT_NETWORK_POLICY_REQUIRED
 */
 var (
 	// An AppsV1Deployment should have a project label.
@@ -412,17 +419,6 @@ var (
 		Message: "A service's name needs to be a valid DNS",
 	}
 )
-
-/*
-Predefined interdependent rules
-
-- A unit should always contain one namespace: INTERDEPENDENT_ONE_NAMESPACE
-
-- All resources should be under the namespace in the unit: INTERDEPENDENT_MATCHING_NAMESPACE
-
-- The unit should contain a network policy: INTERDEPENDENT_NETWORK_POLICY_REQUIRED
-
-*/
 
 var (
 	// A unit should contain exactly one namespace.
