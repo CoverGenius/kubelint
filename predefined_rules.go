@@ -413,6 +413,17 @@ var (
 	}
 )
 
+/*
+Predefined interdependent rules
+
+- A unit should always contain one namespace: INTERDEPENDENT_ONE_NAMESPACE
+
+- All resources should be under the namespace in the unit: INTERDEPENDENT_MATCHING_NAMESPACE
+
+- The unit should contain a network policy: INTERDEPENDENT_NETWORK_POLICY_REQUIRED
+
+*/
+
 var (
 	// A unit should contain exactly one namespace.
 	INTERDEPENDENT_ONE_NAMESPACE = &InterdependentRule{
