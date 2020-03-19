@@ -16,6 +16,9 @@ import (
 
 /*
 
+There are a whole bunch of predefined rules for you to use to make it convenient
+to include more generally applicable rules. If you wish to expand the list, please submit a pull request!
+
 Predefined rules relating to resources of type appsv1.Deployment
 
 - An AppsV1Deployment should have a project label: APPSV1_DEPLOYMENT_EXISTS_PROJECT_LABEL
