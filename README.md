@@ -170,12 +170,33 @@ check the contents of the slice (`ID: FIRST_CONTAINER_IS_CORONA_FREE`). It might
 rule := &kubelint.AppsV1DeploymentRule{
   ID: "FIRST_CONTAINER_CORONA_FREE",
   Prereqs: []RuleID{"IMPORTANT_LENGTH_CHECK"},
-  Condition: func(d *appsv1.Deployment) {
+  Condition: func(d *appsv1.Deployment) bool {
     return d.Spec.Template.Spec.Containers[0].Name != "Corona"
   },
 }
 ```
 Then you can ensure that the dereference `[0]` won't cause a runtime panic because the `"IMPORTANT_LENGTH_CHECK"` must have been evaluated first, and was successful.
+
+#### Fixes
+You can attach a Fix method to all of your rules! It's expected that this just mutates the object in some way so that the rule is satisfied. You signal that the rule has been satisfied by returning `true`, and `false` if it wasn't possible to fix the object.
+
+```go
+rule := &kubelint.AppsV1DeploymentRule{
+  ID: "FIRST_CONTAINER_CORONA_FREE",
+  Prereqs: []RuleID{"IMPORTANT_LENGTH_CHECK"},
+  Condition: func(d *appsv1.Deployment) bool {
+    return d.Spec.Template.Spec.Containers[0].Name != "Corona"
+  },
+  Level: logrus.ErrorLevel,
+  Fix: func(d *appsv1.Deployment) bool {
+    d.Spec.Template.Spec.Containers[0].Name = "Corona"
+    return true
+  },
+  FixDescription: func(d *appsv1.Deployment) string {
+     return fmt.Sprintf("Set Deployment %s's name to Corona", d.Name)
+  }
+}
+```
 
 ### Interdependent Rules
 Sometimes, you can't actually evaluate if a condition is met by looking at resources one by one. You need to judge the collection of resources as a whole.
