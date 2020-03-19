@@ -17,9 +17,10 @@ import (
 /*
 
 Predefined rules relating to resources of type appsv1.Deployment
- - An AppsV1Deployment should have a project label *	APPSV1_DEPLOYMENT_EXISTS_PROJECT_LABEL
 
- - An AppsV1Deployment should have an app.kubernetes.io/name label *  APPSV1_DEPLOYMENT_EXISTS_APP_K8S_LABEL
+ - An AppsV1Deployment should have a project label * APPSV1_DEPLOYMENT_EXISTS_PROJECT_LABEL
+
+ - An AppsV1Deployment should have an app.kubernetes.io/name label * APPSV1_DEPLOYMENT_EXISTS_APP_K8S_LABEL
 
  - An AppsV1Deployment should be within a namespace * APPSV1_DEPLOYMENT_WITHIN_NAMESPACE
 
@@ -35,7 +36,7 @@ Predefined rules relating to resources of type appsv1.Deployment
 
  - A V1PodSpec should specify runAsNonRoot: true * V1_PODSPEC_RUN_AS_NON_ROOT
 
- - A V1PodSpec should have a user and group ID of 44444 * CT_USER_GROUP_ID
+ - A V1PodSpec should have a user and group ID of 44444 * V1_PODSPEC_CORRECT_USER_GROUP_ID
 
  - A V1PodSpec should have exactly one container * V1_PODSPEC_EXACTLY_1_CONTAINER
 
