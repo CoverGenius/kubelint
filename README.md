@@ -132,7 +132,9 @@ and get back a list of results that you can log.
 ### Rules
 The linter keeps track of type-specific rules (eg `RbacV1Beta1RoleBindingRule`, `NetworkingV1NetworkPolicyRule`), generic rules (`GenericRule`), and interdependent rules (`InterdependentRule`) 
 (that require a scan over every resource in order to evaluate). A rule should capture some kind of semantic requirement 
-on your kubernetes objects. An example is that every deployment name should contain the string "coronavirus". This should be defined
+on your kubernetes objects. 
+Either you can use the predefined rules given under the Variables list in kubelint, or you can define your own rules, or both!
+An example rule that you could create is that every deployment name should contain the string "coronavirus". This should be defined
 by the `Condition func(*appsv1.Deployment) bool` field.
 
 ```go
