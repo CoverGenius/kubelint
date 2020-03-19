@@ -68,7 +68,11 @@ Predefined rules relating to resources of type batchV1.Job
 
 - A BatchV1Job's Time to Live should be set: BATCHV1_JOB_EXISTS_TTL
 
-- A namespace should have a valid DNS name: V1_NAMESPACE_VALID_DNS
+Predefined rules relating to resources of type v1.Namespace
+
+- A V1Namespace should have a valid DNS name: V1_NAMESPACE_VALID_DNS
+
+Predefined rules relating to resources of type v1.Service
 
 - A V1Service should be within a namespace: V1_SERVICE_WITHIN_NAMESPACE
 
